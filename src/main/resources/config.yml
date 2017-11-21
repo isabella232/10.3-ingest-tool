@@ -1,0 +1,42 @@
+# external resources
+input-dir: "../input"
+output-dir: "../output"
+mapping-dir: "../mapping"
+xquery-dir: "..../conf/xquery"
+google-key-path: "../google-sheet-accessor.key"
+user-config-path: "../config.yml"
+
+# internal resources
+ead1-to-ead2002-path: "../conf/v1to02.xsl"
+ead-rng-path: "/rng/ead.rng"
+xquery-module-dir: "/xquery/lib"
+generic-transformer-path: "/xquery/transform.xqy"
+html-generator-path: "/xquery/ead2html.xqy"
+xml-converter-path: "/xquery/any2xml.xqy"
+ead-struct-path: "/ead2002.struct"
+formatting-path: "/tsv/formatting.tsv"
+translations-path: "/tsv/labels.tsv"
+stylesheet-location: "/css/ead.css"
+
+pre_ingest_steps: "/xquery/pre_ingest_steps/append.xq"
+
+# other stuff
+ead-subdir: "ead"
+svrl-subdir: "svrl"
+injected-subdir: "injected"
+html-subdir: "html"
+google-app-name: "EHRI Conversion Tool"
+organisation-mappings-sheet: "1OnFlXptIfsq2erZBYQUXcBEp4NEqOGD_R9Xu8gMfYds"
+organisation-mappings-sheet-range: "A2:C"
+default-language: "en"
+ead-namespaces:
+  "": "urn:isbn:1-931666-22-9"
+  "xlink": "http://www.w3.org/1999/xlink"
+  "xsi": "http://www.w3.org/2001/XMLSchema-instance"
+
+
+#ead-input-dir: "/home/boyans/rs-aggregator-1.0.0/rs-aggregator-1.0.0/target/destination"
+ead-input-dir: "D:/projects/EHRI/rc-aggregator/rs-aggregator-1.0.0/rs-aggregator-1.0.0/target/destination"
+initial-validation-folder: "D:/projects/EHRI/rc-aggregator/input-validaton-folder"
+pre-ingest-dir: "D:/projects/EHRI/rc-aggregator/input-validaton-folder/"
+

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>EHRI Conversion Tool</title>
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/style.min.css" />
+    <!-- /CSS -->
+</head>
+
+<body>
+    <div id="page">
+        <header id="header" class="header" role="header">
+            <div id="logoregion">
+                <h1 id="logo">
+                    <a href="http://www.ehri-project.eu" target="_blank">EHRI- European Holocaust Research Infrastructure</a>
+                </h1>
+            </div>
+            <div id="navigation">
+                <div class="view-header-image ">
+                    <img src="img/banner_img.jpg" alt="" title="" />
+                </div>
+            </div>
+            <div class="tool_navigation">
+                <a href="#" class="transformation">Transformation</a>
+                <a href="#" class="validation">Validation</a>
+            </div>
+        </header>
+        <!-- /header -->
+        <div id="main">
+            <div class="loader">
+                <div class="bkg"></div>
+                <img class="loader_img" src="img/ot-loader.svg" />
+            </div>
+            <div id="main-inner">
+                <h1 class="roodtext">
+                    <span class="font300">EAD</span> CONVERSION TOOL
+                    <a href="#" class="btn pull-right">documentation</a>
+                </h1>
+                <!-- STEPS -->
+                <div class="steps-form-holder">
+                    <span id="label_step_1" class="step_label active">1</span>
+                    <span id="label_step_2" class="step_label">2</span>
+                    <span id="label_step_3" class="step_label">3</span>
+                    <span id="label_step_4" class="step_label">4</span>
+                    <span id="label_step_5" class="step_label">5</span>
+                    <span id="label_step_6" class="step_label">6</span>
+                    <hr class="line" />
+                    <div class="clearfix"></div>
+                </div>
+                <!-- /STEPS -->
+                <!-- STEP 1 -->
+                <div id="step1" class="step active">
+                    <div class="input-holder source">
+                        <label class="roodtext inputlabel">
+                            Please select your <span class="font700">Organization</span>
+                        </label>
+                        <select name="organization" id="organization" style="width: 625px;">
+                            <option value="">Please select</option>
+                        </select>
+                        <span class="tooltipHolder">(?)<span class="tooltip text">Select your organization from the drop-down list.<p>If your organization is not present select Other.</p></span></span>
+                    </div>
+                    <button class="btn pull-right submit submit_step" id="submit_step1">Next step</button>
+                </div>
+                <!-- /STEP 1 -->
+                <!-- STEP 2 -->
+                <div id="step2" class="step ">
+                    <div class="input-holder source">
+                        <label class="roodtext inputlabel">
+                            Please select your files <span class="font700">INPUT FORMAT</span>
+                        </label>
+                        <select name="file_type" id="file_type" style="width: 625px;">
+                            <option value="">Please select</option>
+                            <option value="xml">XML</option>
+                            <!-- commented out since questions will aquare
+                            <option value="json">JSON</option>
+                            <option value="sheet">DATA Sheet</option>
+                            -->
+                            <option value="xml_ead">XML-EAD 1</option>
+                        </select>
+                        <span class="tooltipHolder">(?)<span class="tooltip text">XML Documents are all type VALID encoded documents. <p>XML-EAD 1 which are using coded representations of elements for efficient machine-processing.</p></span></span>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step2">Previous step</button>
+                    <button class="btn pull-right submit submit_step " id="submit_step2">Next step</button>
+                </div>
+                <!-- /STEP 2 -->
+                <!-- STEP 2.1 CASE XML-EAD-2001 -->
+                <div id="step2_1" class="step">
+                    <div class="input-holder source">
+                        <label class="roodtext inputlabel">
+                            Select <span class="font700">transformation</span> or <span class="font700">mapping</span>
+                        </label>
+                        <select name="transformation_type" id="transformation_type" style="width: 625px;">
+                            <option value="">Please select</option>
+                            <option value="mapping">Mapping</option>
+                            <option value="ead_2">Transformation</option>
+                        </select>
+                        <span class="tooltipHolder">(?)<span class="tooltip text">There are two types of transformation Universal (default) and Specific. Using the
+Universal one, you can transform your data files in the EAD 2002 format.
+If you want to use the tool for transforming data in other formats, you should create
+your own xquery transformation schemes and add them to the /xquery folder. Then,
+they can be used when the Specific transformation type is selected.</span></span>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step2_1">Previous step</button>
+                    <button class="btn pull-right submit submit_step" id="submit_step2_1">Next step</button>
+                </div>
+                <!-- /STEP 2.1 -->
+                <!-- STEP 3 -->
+                <div id="step3" class="step">
+                    <div class="input-holder source">
+                        <label class="roodtext inputlabel">
+                            Select type of <span class="font700">Transformation</span>
+                        </label>
+                        <select name="mapping_type" id="mapping_type" style="width: 625px;">
+                            <option value="" selected="true">Please select</option>
+                            <option value="generic">Universal Transformation</option>
+                            <option value="specific">Specific Transformation</option>
+                        </select>
+                        <span class="tooltipHolder">(?)<span class="tooltip text">There are two types of transformation Universal (default) and Specific. Using the
+Universal one, you can transform your data files in the EAD 2002 format.
+If you want to use the tool for transforming data in other formats, you should create
+your own xquery transformation schemes and add them to the /xquery folder. Then,
+they can be used when the Specific transformation type is selected.</span></span>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step3">Previous step</button>
+                    <button class="btn pull-right submit submit_step" id="submit_step3">Next step</button>
+                </div>
+                <!-- /STEP 3 -->
+                <!-- STEP 4 CASE GENERIC-->
+                <div id="step4" class="step">
+                    <div class="input-holder source">
+                        <div class="input-holder google">
+                            <!-- google sheets should be loaded via REST -->
+                            <a class="btn pull-right" id="view_google" target="_blank">VIEW Google speadsheet</a>
+                            <div class="clearfix"></div>
+                            <input type="text" name="google_link" class="inputform" id="google_link" readonly="true" />
+                            <!-- google sheets should be loaded via REST -->
+                        </div>
+                    </div>
+                    <div id="iframe_holder">
+                        <!-- google sheets should be loaded via REST -->
+                        <iframe src="" id="google-iframe"></iframe>
+                        <!-- google sheets should be loaded via REST -->
+                    </div>
+                    <div class="input-holder specific_mapping">
+                        <label class="roodtext inputlabel">
+                            Select Local <span class="font700">Mapping</span>
+                        </label>
+                        <select name="specific_mapping_google_step" id="specific_mapping_google_step">
+                            <option value="" selected="true">Select local mapping file</option>
+                        </select>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step4">Previous step</button>
+                    <button class="btn pull-right submit submit_step" id="submit_step4">Next step</button>
+                </div>
+                <!-- /STEP 4 -->
+                <!-- STEP 4.1 CASE SPECIFIC-->
+                <div id="step4_1" class="step">
+                    <div class="input-holder specific">
+                        <label class="roodtext inputlabel">
+                            Select <span class="font700">xquery File</span>
+                        </label>
+                        <select name="specific_trans_xquery" id="specific_trans_xquery">
+                            <option value="" selected="true">Please select xquery File</option>
+                        </select>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step4_1">Previous step</button>
+                    <button class="btn pull-right submit submit_step" id="submit_step4_1">Next step</button>
+                </div>
+                <!-- /STEP 4.1 -->
+                <!-- STEP 5 -->
+                <div id="step5" class="step">
+                    <div class="organization_name_holder" id="organization_name"></div>
+                    <div class="input-holder local">
+                        <table>
+                            <caption>
+                                <label class="roodtext inputlabel">
+                                    Input Folder <span class="font700">Content</span>
+                                </label>
+                            </caption>
+                            <thead>
+                                <th>Files</th>
+                            </thead>
+                            <tbody id="income_folder">
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn pull-left previous_step" id="previous_step5">Previous step</button>
+                    <a class="btn pull-right submit submit_step" id="submit_step5" href="#">Start Transformation</a>
+                </div>
+                <!-- /STEP 5 -->
+                <!-- STEP 6 -->
+                <div id="step6" class="step">
+                    <div class="success_notes">
+                        <p>Data was transformed Successfully!</p>
+                    </div>
+                    <p>From <span class="roodtext font700" id="for_transformation_files"></span> files we created <span class="roodtext font700" id="transformed_files"></span>.</p>
+                    <p>Please take a look at the table below to find out the generated fiels and their errors</p>
+                    <table id="tableErrors">
+                        <caption>Conversion report</caption>
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Number of errors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="errors_table">
+                        </tbody>
+                    </table>
+                    <button class="btn pull-right submit_step" id="start_new">Start new transformation</button>
+                    <button class="btn pull-right submit_step" id="repeat">Repeat transformation</button>
+                </div>
+                <!-- /STEP 6 -->
+            </div>
+        </div>
+        <footer id="footer" class="region region-footer">
+            <div class="funding">
+                <a href="http://europa.eu/" target="_blank" class="external-processed eu">EHRI is funded by the European Union</a>
+                <a href="http://ontotext.com/" target="_blank" class="external-processed ot"></a>
+                <span class="version">Current version of Conversion Tool: 0.4</span>
+                <div class="clearfix"></div>
+            </div>
+        </footer>
+    </div>
+    <!-- JS -->
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js"></script>
+    <script src="js/app.min.js"></script>
+    <!-- /JS -->
+</body>
+
+</html>

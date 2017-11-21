@@ -1,0 +1,147 @@
+node-name	en	de
+abbr	Abbreviation	Abkürzung
+abstract	Abstract	Zusammenfassung
+accessrestrict	Conditions Governing Access	Benutzungsbeschränkungen
+accruals	Accruals	Zugänge
+acqinfo	Acquisition Information	Beschreibung der Zugänge
+address	Address	Adresse
+addressline	Address Line	Adresszeile
+altformavail	Alternative Form Available	Konversionsformen
+appraisal	Appraisal Information	Bewertung
+arc	Arc	Bogen
+archdesc	Archival Description	Archivische Erschließung
+archdescgrp	Archival Description Group	Gruppierung archivischer Erschließung
+archref	Archival Reference	Archivischer Nachweis
+arrangement	Arrangement	Ordnung
+author	Author	Bearbeiter
+bibliography	Bibliography	Veröffentlichungen
+bibref	Bibliographic Reference	Bibliographischer Nachweis
+bibseries	Bibliographic Series	Bibliographische Reihe
+bioghist	Biography or History	Entstehungsgeschichte
+blockquote	Block Quote	Blockzitat
+c	Component (Unnumbered)	Komponente – Unnummeriert
+c01	Component (First Level)	Komponente – Oberste Ebene
+c02	Component (Second Level)	Komponente – Zweite Ebene
+c03	Component (Third Level)	Komponente – Dritte Ebene
+c04	Component (Fourth Level)	Komponente – Vierte Ebene
+c05	Component (Fifth Level)	Komponente – Fünfte Ebene
+c06	Component (Sixth Level)	Komponente – Sechste Ebene
+c07	Component (Seventh Level)	Komponente – Siebente Ebene
+c08	Component (Eighth Level)	Komponente – Achte Ebene
+c09	Component (Ninth Level)	Komponente – Neunte Ebene
+c10	Component (Tenth Level)	Komponente – Zehnte Ebene
+c11	Component (Eleventh Level)	Komponente – Elfte Ebene
+c12	Component (Twelfth Level)	Komponente – Zwölfte Ebene
+change	Change	Änderung
+chronitem	Chronology List Item	Chronologischer Listeneintrag
+chronlist	Chronology List	Chronologische Liste
+colspec	Table Column Specification	Spalteneigenschaften
+container	Container	Behälter
+controlaccess	Controlled Access Headings	Begriffe aus Normansetzungen
+corpname	Corporate Name	Körperschaftsname
+creation	Creation	Herstellung
+custodhist	Custodial History	Bestandsgeschichte
+dao	Digital Archival Object	Digitales Archivobjekt
+daodesc	Digital Archival Object Description	Beschreibung digitaler Archivobjekte
+daogrp	Digital Archival Object Group	Gruppe digitaler Archivobjekte
+daoloc	Digital Archival Object Location	Ort des digitalen Archivobjekts
+date	Date	Datum
+defitem	Definition List Item	Definitionslisteneintrag
+descgrp	Description Group	Gruppierung der Erschließung
+descrules	Descriptive Rules	Erschließungsregeln
+did	Descriptive Identification	Erschließungsangaben
+dimensions	Dimensions	Maße
+div	Text Division	Textteil
+dsc	Description of Subordinate Components	Erschließung untergeordneter Komponenten
+dscgrp	Description of Subordinate Components Group	Gruppierung der Erschließung untergeordneter Komponenten
+ead	Encoded Archival Description	Kodierte Archivische Erschließung
+eadgrp	EAD Group	EAD-Gruppe
+eadheader	EAD Header	EAD-Kopf
+eadid	EAD Identifier	EAD-Identifikator
+edition	Edition	Auflage
+editionstmt	Edition Statement	Bemerkung zur Auflage
+emph	Emphasis	Hervorhebung
+entry	Table Entry	Tabelleneintrag
+event	Event	Ereignis
+eventgrp	Event Group	Gruppierung von Ereignissen
+expan	Expansion	Langform
+extent	Extent	Umfang
+extptr	Extended Pointer	Externer Zeiger
+extptrloc	Extended Pointer Location	Ort des Externen Zeiges
+extref	Extended Reference	Externer Verweis
+extrefloc	Extended Reference Location	Ort des Externen Verweises
+famname	Family Name	Familienname
+filedesc	File Description	Dateibeschreibung
+fileplan	File Plan	Aktenplan
+frontmatter	Front Matter	Vorspann
+function	Function	Funktion
+genreform	Genre/Physical Characteristic	Genre oder Form
+geogname	Geographic Name	Geographische Bezeichnung
+head	Heading	Kopfelement/Überschrift
+head01	First Heading	Kopfzeile Eins
+head02	Second Heading	Kopfzeile Zwei
+imprint	Imprint	Impressum
+index	Index	Index
+indexentry	Index Entry	Indexeintrag
+item	Item	Eintrag
+label	Label	Beschriftung
+langmaterial	Language of the Material	Sprache des Materials
+language	Language	Sprache
+langusage	Language Usage	Verwendete Sprache
+lb	Line Break	Zeilenumbruch
+legalstatus	Legal Status	Rechtlicher Status
+linkgrp	Linking Group	Gruppierung von Verweisen
+list	List	Liste
+listhead	List Heading	Listenkopf
+materialspec	Material Specific Details	Materialdetails
+name	Name	Name
+namegrp	Name Group	Gruppierung von Namen
+note	Note	Bemerkung
+notestmt	Note Statement	Bemerkungszusammenstellung
+num	Number	Nummer
+occupation	Occupation	Beruf
+odd	Other Descriptive Data	Sonstige Erschließungsangaben
+originalsloc	Location of Originals	Lagerungsort der Originale
+origination	Origination	Provenienz
+otherfindaid	Other Finding Aid	Verweis auf andere Findmittel
+p	Paragraph	Absatz
+persname	Personal Name	Personenname
+physdesc	Physical Description	Physische Beschreibung
+physfacet	Physical Facet	Physische Erscheinung
+physloc	Physical Location	Lagerort
+phystech	Physical Characteristics and Technical Requirements	Physische Eigenschaften und technische Anforderungen
+prefercite	Preferred Citation	Zitierweise
+processinfo	Processing Information	Bearbeitungsinformationen
+profiledesc	Profile Description	Kodierung
+ptr	Pointer	Zeiger
+ptrgrp	Pointer Group	Gruppierung von Zeigern
+ptrloc	Pointer Location	Ort des Zeigers
+publicationstmt	Publication Statement	Veröffentlichung
+publisher	Publisher	Verlag
+ref	Reference	Verweis
+refloc	Reference Location	Ort des Verweises
+relatedmaterial	Related Material	Verwandtes Material
+repository	Repository	Archiv
+resource	Resource	Quelle
+revisiondesc	Revision Description	Bezeichnung der Änderung
+row	Table Row	Zeile
+runner	Runner	Läufer
+scopecontent	Scope and Content	Gegenstände
+separatedmaterial	Separated Material	Separiertes Material
+seriesstmt	Series Statement	Publikationsreihe
+sponsor	Sponsor	Förderer
+subarea	Subordinate Area	Nachgeordneter Bereich/Abteilung
+subject	Subject	Gegenstand
+subtitle	Subtitle	Untertitel
+table	Table	Tabelle
+tbody	Table Body	Tabellenkörper
+tgroup	Table Group	Tabellenbereich
+thead	Table Head	Tabellenkopf
+title	Title	Titel
+titlepage	Title Page	Titelseite
+titleproper	Title Proper of the Finding Aid	Findbuchtitel
+titlestmt	Title Statement	Angaben zum Findbuchtitel
+unitdate	Date of the Unit	Laufzeit
+unitid	ID of the Unit	Identifikator der Einheit/Signatur
+unittitle	Title of the Unit	Titel der Verzeichnungseinheit
+userestrict	Conditions Governing Use	Benutzungsbedingungen

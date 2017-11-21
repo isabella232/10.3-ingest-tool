@@ -1,0 +1,258 @@
+/* General */
+body {
+  font-size: 14px;
+  display: block;
+  padding: 4px;
+  top: 0;
+  left: 0;
+  height: 100%;
+}
+/* /General */
+
+/* Home Page (index) */
+.index {
+    display: table;
+    padding: 0 8px;
+    border-spacing: 0 8px;
+    background-color: #fffaf0;
+}
+
+.index .index-item {
+    display: table-row;
+}
+
+.index .index-item.without-errors{
+    background: linear-gradient(#fffaf0, #98fb98, #fffaf0);
+}
+
+.index .index-item.with-errors{
+    background: linear-gradient(#fffaf0, #ffa07a, #fffaf0);
+}
+
+.index .index-item a{
+    display: table-cell;
+    padding: 8px;
+}
+
+.index .index-item a{
+    color: #0000cd;
+}
+
+.index .index-item a:hover{
+    color: #9932cc;
+}
+
+.index .index-item span{
+    display: table-cell;
+    padding: 8px;
+}
+
+.index .index-item.without-errors span{
+    color: #006400;
+}
+
+.index .index-item.with-errors span{
+    color: #8b0000;
+}
+/* /Home Page (index) */
+
+
+/* Table of Content */
+.table-of-contents{
+    position: fixed;
+    display: inline-block;
+    overflow-y: scroll;
+    width: 210px;
+    height: 100%;
+    padding: 8px;
+    border: 2px solid #191970;
+    background-color: #f0ffff;
+    left: 10px;
+}
+
+.table-of-contents a{
+    display: inline-block;
+    margin: 4px;
+    width: 100%;
+}
+
+.table-of-contents a{
+    color: #0000cd;
+}
+
+.table-of-contents a:hover{
+    color: #9932cc;
+}
+
+/* /Table of Content */
+
+
+/* Main Content */
+
+
+
+
+body > .element{
+    position: absolute;
+    right: 10px;
+    width: 80%;
+    margin: 0;
+    padding: 8px;
+    border: 2px solid #191970;
+    border-radius: 10px;
+    background-color: #fffafa;
+}
+
+.element{
+    margin: 8px;
+    padding: 8px;
+    border: 2px solid #191970;
+    border-radius: 4px;
+    background-color: #fffafa;
+}
+
+.element:target{
+    animation-name: background-flash;
+    animation-duration: 2s;
+
+    background-color: #ffc0cb;
+}
+
+.meta{
+    display: inline-flex;
+    margin-left: 8px;
+}
+
+.meta > .name{
+    font-weight: bold;
+    padding: 2px;
+    color: #006400;
+    border-radius: .5vw;
+}
+
+.meta.with-tooltip > .name{
+    color: #b22222;
+    /* uncomment to enable flashy text on erroneous elements (seizure alert)
+  animation-name: text-flash;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  */
+}
+
+.meta > .tooltip{
+    /* uncomment to remove tooltips unless hovered upon
+  display: none;
+  */
+    position: relative;
+    z-index: 1;
+    margin-left: 12px;
+    padding: 4px 10px;
+    color: #8b0000;
+    border: 2px solid #8b0000;
+    border-radius: 10px;
+    background-color: #ffe4e1;
+}
+
+.meta.with-tooltip:hover > .tooltip{
+    display: inline-block;
+    -webkit-transition: all .3s ease;
+       -moz-transition: all .3s ease;
+         -o-transition: all .3s ease;
+            transition: all .3s ease;
+}
+.meta.with-tooltip:hover > .tooltip:hover{
+    color: #fff;
+    background-color: #dc143c;
+}
+.meta.with-tooltip:hover > .tooltip:hover a{
+    color: #ffe4e1;
+}
+
+.tooltip:after{
+    position: absolute;
+    top: 3px;
+    right: 100%;
+    content: ' ';
+    border: 6px solid;
+    border-color: transparent #8b0000 transparent transparent;
+}
+
+.tooltip > .text{
+    display: block;
+}
+
+.tooltip > .role
+{
+    font-weight: bold;
+
+    display: block;
+}
+
+.tooltip > .role:before
+{
+    content: '[';
+}
+
+.tooltip > .role:after
+{
+    content: ']';
+}
+
+.tooltip > .docu
+{
+    display: block;
+}
+
+.attributes {
+    display: table;
+    margin: 8px;
+    padding: 8px;
+    color: #000080;
+    border: 1px solid #4169e1;
+    border-left: 4px solid #4169e1;
+    background: linear-gradient(#f0f8ff, #fff, #f0f8ff);
+}
+
+.attributes > .attribute
+{
+    display: table-row;
+}
+
+.attributes > .attribute > .name
+{
+    font-weight: bold;
+
+    display: table-cell;
+}
+
+.attributes > .attribute > .value
+{
+    display: table-cell;
+    padding-left: 15px;
+}
+
+.contents{
+    margin: 8px;
+    padding: 8px;
+    color: #2f4f4f;
+    border: 1px solid #008080;
+    border-left: 4px solid #008080;
+    background: linear-gradient(#f5fffa, #fff, #f5fffa);
+}
+
+@keyframes background-flash
+{
+    from
+    {
+        background-color: #dc143c;
+    }
+}
+
+@keyframes text-flash
+{
+    from
+    {
+        color: #f00;
+        background-color: #fa8072;
+    }
+}
