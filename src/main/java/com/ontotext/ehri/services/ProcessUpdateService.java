@@ -6,6 +6,8 @@ import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -28,7 +31,9 @@ public class ProcessUpdateService {
     private ConfigurationService configurationService;
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProcessUpdateService.class);
-    private String fileLocation = Configuration.getString("ead-input-dir");
+    private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
+    private String PMHFileLocation = Configuration.getString("pmh-ead-input-dir");
+
     private String inputValidatinFolder = Configuration.getString("initial-validation-folder");
     private final String USER_AGENT = "Mozilla/5.0";
 
@@ -57,6 +62,27 @@ public class ProcessUpdateService {
     public Map<String, List<FileMetaModel>> checkForChanges() throws IOException, URISyntaxException {
 
         Map<String, List<FileMetaModel>> syncMetaData = configurationService.loadSavedConfig();
+
+        Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
+        Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
+
+        return deepMerge(rsChanges, PMHChanges);
+    }
+
+    public Map deepMerge(Map original, Map newMap) {
+        for (Object key : newMap.keySet()) {
+            if (newMap.get(key) instanceof Map && original.get(key) instanceof Map) {
+                Map originalChild = (Map) original.get(key);
+                Map newChild = (Map) newMap.get(key);
+                original.put(key, deepMerge(originalChild, newChild));
+            } else {
+                original.put(key, newMap.get(key));
+            }
+        }
+        return original;
+    }
+
+    private Map<String, List<FileMetaModel>> checkChanges(String fileLocation, Map<String, List<FileMetaModel>> syncMetaData) throws URISyntaxException {
         Map<String, List<FileMetaModel>> changes;
         if (syncMetaData != null && !syncMetaData.isEmpty()){
             Map<String, List<FileMetaModel>> metaDataCollectionNew = initiateFileStatus(fileLocation);
@@ -66,7 +92,6 @@ public class ProcessUpdateService {
             changes = initiateFileStatus(fileLocation);
             configurationService.saveMetaData(changes);
         }
-
         return changes;
     }
 
@@ -111,10 +136,11 @@ public class ProcessUpdateService {
         Map<String, List<FileMetaModel>> metaDataCollection = new HashMap<>();
         File file = new File(location);
         if (file.exists()) {
-            File providers[] = file.listFiles();
+            File[] providers = file.listFiles();
+//            providers = listAllFiles(Arrays.asList(file.listFiles()));
             if (providers != null) {
                 for (File provider : providers) {
-                    File eadFiles [] = readEADFiles(provider);
+                    List<File> eadFiles = readEADFiles(provider);
                     List<FileMetaModel> metaData = collectMetaData(eadFiles);
                     metaDataCollection.put(provider.getName(), metaData);
                 }
@@ -124,9 +150,35 @@ public class ProcessUpdateService {
         return metaDataCollection;
     }
 
-    private List<FileMetaModel> collectMetaData(File fileCollection[]) {
+    private ArrayList<File> listAllFiles(List<File> locations) {
+       ArrayList<File> result = new ArrayList();
+        for (File location : locations) {
+            if (location.exists() && location.isDirectory()) {
+                result.addAll(Arrays.asList(location.listFiles()));
+                result.remove(location);
+            }
+            else {
+                result.add(location);
+            }
+        }
+
+        if (checkLocationForDirectories(result)) {
+            result = listAllFiles(result);
+        }
+
+        return result;
+    }
+
+    private boolean checkLocationForDirectories(ArrayList<File> results) {
+        for (File result : results) {
+            if (result.exists() && result.isDirectory()) return true;
+        }
+        return false;
+    }
+
+    private List<FileMetaModel> collectMetaData(List<File> fileCollection) {
         List<FileMetaModel> metaDataCollection = new ArrayList<>();
-        if (fileCollection != null && fileCollection.length > 0) {
+        if (fileCollection != null && fileCollection.size() > 0) {
             for (File file : fileCollection) {
                 FileMetaModel metaModel = new FileMetaModel();
                 metaModel.setFileName(file.getName());
@@ -141,15 +193,18 @@ public class ProcessUpdateService {
         return metaDataCollection;
     }
 
-    private File [] readEADFiles(File providerDir) {
+    private List<File> readEADFiles(File providerDir) {
         File contentDir = null;
         if (providerDir.exists() && providerDir.isDirectory()) {
             contentDir = new File(providerDir.getAbsolutePath() + "/" + "/metadata/__SOR__/ead");
+            if (!contentDir.exists()) {
+                contentDir = new File(providerDir.getAbsolutePath());
+            }
         }
 
-        File eadFiles[] = null;
+        List<File> eadFiles = null;
         if (contentDir != null && contentDir.isDirectory()) {
-            eadFiles = contentDir.listFiles();
+            eadFiles = (List<File>) FileUtils.listFiles(contentDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         }
 
         return eadFiles;
@@ -242,43 +297,49 @@ public class ProcessUpdateService {
         return compressedCollection;
     }
 
-    public void processIngest(Map<String, ProviderConfigModel> providerConfig) throws IOException {
+    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults) throws IOException {
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-            String url =  entry.getValue().getRepository();
+            if (!validaitonResults.get(entry.getValue().getEadFolderName())) {
+                String url =  entry.getValue().getRepository();
 
-            URL obj = new URL(url);
-            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                URL obj = new URL(url);
+                HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-            con.setRequestMethod("POST");
-            con.setRequestProperty("User-Agent", USER_AGENT);
-            con.setRequestProperty("X-User", "boyans");
-            con.setRequestProperty("content-type", "application/octet-stream");
+                con.setRequestMethod("POST");
+                con.setRequestProperty("User-Agent", USER_AGENT);
+                con.setRequestProperty("X-User", "boyans");
+                con.setRequestProperty("content-type", "application/octet-stream");
+                con.setRequestProperty("scope", entry.getValue().getRepositoryName());
+                con.setRequestProperty("log", entry.getValue().getLog());
+                con.setRequestProperty("properties", entry.getValue().getIngestPropertyFile());
+                con.setRequestProperty("commit", "false");
 
-            con.setDoOutput(true);
-            DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-            wr.write(Files.readAllBytes(new File(entry.getValue().getEadFileLocation()).toPath()));
+                con.setDoOutput(true);
+                DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+                wr.write(Files.readAllBytes(new File(entry.getValue().getEadFileLocation()).toPath()));
 //            wr.write(Files.readAllBytes(new File("D:\\projects\\EHRI\\rc-aggregator\\input-validaton-folder\\2017-10-11_14-49-10-886\\ehri-resourcesync.cegesoma.be\\compressed\\ehri-resourcesync.cegesoma.be.tar").toPath()));
-            wr.flush();
-            wr.close();
+                wr.flush();
+                wr.close();
 
-            int responseCode = con.getResponseCode();
-            System.out.println("\nSending 'POST' request to URL : " + url);
+                int responseCode = con.getResponseCode();
+                System.out.println("\nSending 'POST' request to URL : " + url);
 //            System.out.println("Post parameters : " + urlParameters);
-            System.out.println("Response Code : " + responseCode);
+                System.out.println("Response Code : " + responseCode);
 
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+                String inputLine;
+                StringBuffer response = new StringBuffer();
 
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                System.out.println(response.toString());
+
             }
-            in.close();
-
-            System.out.println(response.toString());
-
         }
     }
 
@@ -289,6 +350,7 @@ public class ProcessUpdateService {
             for(String providerC : providerConf) {
                 if (StringUtils.containsIgnoreCase(collection, providerC, Locale.US)) {
                     providerConfig.get(providerC).setEadFileLocation(compressedCollections.get(collection).getAbsolutePath());
+                    providerConfig.get(providerC).setEadFolderName(collection);
                 }
             }
         }

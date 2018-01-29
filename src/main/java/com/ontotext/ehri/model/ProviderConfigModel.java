@@ -11,6 +11,33 @@ public class ProviderConfigModel {
     private String repository;
     private String eadFileLocation;
     private String enrichments;
+    private String log;
+    private String validationErrors;
+    private String eadFolderName;
+
+    public String getEadFolderName() {
+        return eadFolderName;
+    }
+
+    public void setEadFolderName(String eadFolderName) {
+        this.eadFolderName = eadFolderName;
+    }
+
+    public String getValidationErrors() {
+        return validationErrors;
+    }
+
+    public void setValidationErrors(String validationErrors) {
+        this.validationErrors = validationErrors;
+    }
+
+    public String getLog() {
+        return log;
+    }
+
+    public void setLog(String log) {
+        this.log = log;
+    }
 
     public String getName() {
         return name;

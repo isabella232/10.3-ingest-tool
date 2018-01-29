@@ -45,13 +45,11 @@ public class RestController {
         processUpdateService.fixInputValidationFolder(eadFiles);
         Map<String, File> compressedCollections = processUpdateService.compressFileCollection(eadFiles, now);
 
-        Map<String, ProviderConfigModel> map = configurationService.loadCHIIngestConfig();
+        Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
 
-        boolean hasValidationErrors  = validationService.validateDirectory(new TransformationModel(), now, null, false);
-        if (hasValidationErrors) {
-            processUpdateService.addEADFileLocation(map, compressedCollections);
-            processUpdateService.processIngest(map);
-        }
+        Map<String, Boolean> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
+        processUpdateService.addEADFileLocation(chiIngestConfig, compressedCollections);
+        processUpdateService.processIngest(chiIngestConfig, validationResults);
 
         return changes;
     }

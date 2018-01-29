@@ -1,5 +1,6 @@
 package com.ontotext.ehri.services;
 
+import com.ontotext.ehri.model.ProviderConfigModel;
 import com.ontotext.ehri.model.TransformationModel;
 import com.ontotext.ehri.tools.*;
 import org.apache.commons.io.FileUtils;
@@ -15,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,24 +25,28 @@ import java.util.regex.Pattern;
 public class ValidationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidationService.class);
 
-    public boolean validateDirectory(TransformationModel model, Date requestDate, String path, boolean validation) {
-        boolean hasValidationErrors = false;
+    public Map<String, Boolean> validateDirectory(TransformationModel model, Date requestDate, String path, boolean validation, Map<String, ProviderConfigModel> chiIngestConfig) {
+        Map<String, Boolean> validationErrors = new HashMap<>();
         File validationDir = getInitialValidationFolder(requestDate);
         File providers[] = validationDir.listFiles();
         for (File provider : providers) {
             try {
                 String validity = validate(model, requestDate, path, validation, provider);
+
                 if (!validity.isEmpty()) {
+                    validationErrors.put(provider.getName(), true);
                     Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
-                    hasValidationErrors = true;
                     LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
+                } else {
+                    validationErrors.put(provider.getName(), false);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        return hasValidationErrors;
+
+        return validationErrors;
     }
 
     public String validate(TransformationModel model, Date requestDate, String path, boolean validation, File outputDir) throws IOException {
