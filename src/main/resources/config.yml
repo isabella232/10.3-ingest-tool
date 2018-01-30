@@ -8,17 +8,22 @@ user-config-path: "../config.yml"
 
 # internal resources
 ead1-to-ead2002-path: "../conf/v1to02.xsl"
-ead-rng-path: "/rng/ead.rng"
-xquery-module-dir: "/xquery/lib"
-generic-transformer-path: "/xquery/transform.xqy"
-html-generator-path: "/xquery/ead2html.xqy"
-xml-converter-path: "/xquery/any2xml.xqy"
-ead-struct-path: "/ead2002.struct"
-formatting-path: "/tsv/formatting.tsv"
-translations-path: "/tsv/labels.tsv"
-stylesheet-location: "/css/ead.css"
+ead-rng-path: "../conf/rng/ead.rng"
+xquery-module-dir: "../conf/xquery/lib"
+generic-transformer-path: "../conf/xquery/transform.xqy"
+html-generator-path: "../conf/xquery/ead2html.xqy"
+xml-converter-path: "../conf/xquery/any2xml.xqy"
+ead-struct-path: "../conf/ead2002.struct"
+formatting-path: "../conf/tsv/formatting.tsv"
+translations-path: "../conf/tsv/labels.tsv"
+stylesheet-location: "../conf/css/ead.css"
 
-pre_ingest_steps: "/xquery/pre_ingest_steps/append.xq"
+
+#YV hierarchy building
+yv-hierarchy-builder: "../conf/xquery/merge.xqy"
+yv-output-folder: "../input/hierarchy-merge.xml"
+multiple-fields-table-id: "Item ID"
+unique-fields-table-id: "Item ID"
 
 # other stuff
 ead-subdir: "ead"

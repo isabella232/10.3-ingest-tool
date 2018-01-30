@@ -65,8 +65,10 @@ public class ProcessUpdateService {
 
         Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
         Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
+        Map<String, List<FileMetaModel>> changes = deepMerge(rsChanges, PMHChanges);
+        configurationService.saveMetaData(changes);
 
-        return deepMerge(rsChanges, PMHChanges);
+        return changes;
     }
 
     public Map deepMerge(Map original, Map newMap) {
@@ -90,7 +92,7 @@ public class ProcessUpdateService {
         }
         else {
             changes = initiateFileStatus(fileLocation);
-            configurationService.saveMetaData(changes);
+
         }
         return changes;
     }
