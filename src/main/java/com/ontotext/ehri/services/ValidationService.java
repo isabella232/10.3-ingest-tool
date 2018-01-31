@@ -32,6 +32,7 @@ public class ValidationService {
         for (File provider : providers) {
             try {
                 String validity = validate(model, requestDate, path, validation, provider);
+                System.out.println("validation- " + validity);
 
                 if (!validity.isEmpty()) {
                     validationErrors.put(provider.getName(), true);

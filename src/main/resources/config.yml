@@ -41,8 +41,13 @@ ead-namespaces:
 
 
 #ead-input-dir: "/home/boyans/rs-aggregator-1.0.0/rs-aggregator-1.0.0/target/destination"
-rs-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-rs-harvester"
-pmh-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-pmh-harvester"
-initial-validation-folder: "D:/projects/EHRI/rc-aggregator/input-validaton-folder"
-pre-ingest-dir: "D:/projects/EHRI/rc-aggregator/input-validaton-folder/"
+#rs-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-rs-harvester"
+#pmh-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-pmh-harvester"
+#initial-validation-folder: "D:/projects/EHRI/rc-aggregator/input-validaton-folder"
+#pre-ingest-dir: "D:/projects/EHRI/rc-aggregator/input-validaton-folder/"
+
+rs-ead-input-dir: "/home/boyans/data/opt/oai-rs-harvester"
+pmh-ead-input-dir: "/home/boyans/data/opt/oai-pmh-harvester"
+initial-validation-folder: "/home/boyans/data/opt/validation-folder"
+pre-ingest-dir: "/home/boyans/data/opt/validation-folder"
 

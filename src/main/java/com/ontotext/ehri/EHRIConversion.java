@@ -12,7 +12,6 @@ public class EHRIConversion {
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(EHRIConversion.class, args);
-        System.out.println("kur");
     }
 
 }

@@ -8,15 +8,23 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.util.StringUtils;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -299,50 +307,92 @@ public class ProcessUpdateService {
         return compressedCollection;
     }
 
-    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults) throws IOException {
+    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
             if (!validaitonResults.get(entry.getValue().getEadFolderName())) {
                 String url =  entry.getValue().getRepository();
 
-                URL obj = new URL(url);
-                HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-                con.setRequestMethod("POST");
-                con.setRequestProperty("User-Agent", USER_AGENT);
-                con.setRequestProperty("X-User", "boyans");
-                con.setRequestProperty("content-type", "application/octet-stream");
-                con.setRequestProperty("scope", entry.getValue().getRepositoryName());
-                con.setRequestProperty("log", entry.getValue().getLog());
-                con.setRequestProperty("properties", entry.getValue().getIngestPropertyFile());
-                con.setRequestProperty("commit", "false");
+                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=false";
+                URL obj = null;
+                try {
+                    obj = new URL(url + "?" + urlParameters);
 
-                con.setDoOutput(true);
-                DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-                wr.write(Files.readAllBytes(new File(entry.getValue().getEadFileLocation()).toPath()));
-//            wr.write(Files.readAllBytes(new File("D:\\projects\\EHRI\\rc-aggregator\\input-validaton-folder\\2017-10-11_14-49-10-886\\ehri-resourcesync.cegesoma.be\\compressed\\ehri-resourcesync.cegesoma.be.tar").toPath()));
-                wr.flush();
-                wr.close();
+                    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-                int responseCode = con.getResponseCode();
-                System.out.println("\nSending 'POST' request to URL : " + url);
-//            System.out.println("Post parameters : " + urlParameters);
-                System.out.println("Response Code : " + responseCode);
+                    //add reuqest header
+                    con.setRequestMethod("POST");
+//                    con.setRequestProperty("User-Agent", USER_AGENT);
+//                    con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+                    con.setRequestProperty("Content-type", "application/octet-stream");
+                    con.setRequestProperty("X-User", "mike");
 
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(con.getInputStream()));
-                String inputLine;
-                StringBuffer response = new StringBuffer();
+                    // Send post request
+                    con.setDoOutput(true);
+                    DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+//                    wr.writeBytes(urlParameters);
+                    wr.write(readAndClose(new FileInputStream(new File(entry.getValue().getEadFileLocation()))));
+                    wr.flush();
+                    wr.close();
 
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
+                    int responseCode = con.getResponseCode();
+                    System.out.println("\nSending 'POST' request to URL : " + url);
+                    System.out.println("Post parameters : " + urlParameters);
+                    System.out.println("Response Code : " + responseCode);
+
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(con.getInputStream()));
+                    String inputLine;
+                    StringBuffer response = new StringBuffer();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    //print result
+                    System.out.println(response.toString());
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                in.close();
-
-                System.out.println(response.toString());
 
             }
         }
+    }
+
+    byte[] readAndClose(InputStream aInput){
+        //carries the data from input to output :
+        byte[] bucket = new byte[32*1024];
+        ByteArrayOutputStream result = null;
+        try  {
+            try {
+                //Use buffering? No. Buffering avoids costly access to disk or network;
+                //buffering to an in-memory stream makes no sense.
+                result = new ByteArrayOutputStream(bucket.length);
+                int bytesRead = 0;
+                while(bytesRead != -1){
+                    //aInput.read() returns -1, 0, or more :
+                    bytesRead = aInput.read(bucket);
+                    if(bytesRead > 0){
+                        result.write(bucket, 0, bytesRead);
+                    }
+                }
+            }
+            finally {
+                aInput.close();
+                //result.close(); this is a no-operation for ByteArrayOutputStream
+            }
+        }
+        catch (IOException ex){
+            System.out.println(ex.getMessage());
+        }
+        return result.toByteArray();
     }
 
     public void addEADFileLocation(Map<String, ProviderConfigModel> providerConfig, Map<String, File> compressedCollections) {
