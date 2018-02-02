@@ -1,23 +1,13 @@
 package com.ontotext.ehri.services;
 
+import com.ontotext.ehri.mail.SendMail;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
 import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +16,6 @@ import org.thymeleaf.util.StringUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -323,15 +312,12 @@ public class ProcessUpdateService {
 
                     //add reuqest header
                     con.setRequestMethod("POST");
-//                    con.setRequestProperty("User-Agent", USER_AGENT);
-//                    con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                     con.setRequestProperty("Content-type", "application/octet-stream");
-                    con.setRequestProperty("X-User", "mike");
+                    con.setRequestProperty("X-User", "user000958");
 
                     // Send post request
                     con.setDoOutput(true);
                     DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-//                    wr.writeBytes(urlParameters);
                     wr.write(readAndClose(new FileInputStream(new File(entry.getValue().getEadFileLocation()))));
                     wr.flush();
                     wr.close();
@@ -364,6 +350,19 @@ public class ProcessUpdateService {
 
             }
         }
+    }
+
+    public void reportDatasetsWithErrors(Map<String, Boolean> validaitonResults) {
+        String failedDatasets = "";
+        for (Map.Entry<String, Boolean> entry : validaitonResults.entrySet()) {
+            if (!entry.getValue()) {
+                if (!failedDatasets.isEmpty()) failedDatasets += ", " + entry.getKey();
+            }
+            else {
+                failedDatasets = entry.getKey();
+            }
+        }
+        new SendMail().send(failedDatasets);
     }
 
     byte[] readAndClose(InputStream aInput){

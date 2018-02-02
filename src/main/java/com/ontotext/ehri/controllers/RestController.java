@@ -50,6 +50,7 @@ public class RestController {
         Map<String, Boolean> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
         processUpdateService.addEADFileLocation(chiIngestConfig, compressedCollections);
         processUpdateService.processIngest(chiIngestConfig, validationResults);
+        processUpdateService.reportDatasetsWithErrors(validationResults);
 
         return changes;
     }
