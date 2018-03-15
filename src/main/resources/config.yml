@@ -40,14 +40,19 @@ ead-namespaces:
   "xsi": "http://www.w3.org/2001/XMLSchema-instance"
 
 
-#ead-input-dir: "/home/boyans/rs-aggregator-1.0.0/rs-aggregator-1.0.0/target/destination"
-#rs-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-rs-harvester"
-#pmh-ead-input-dir: "D:/projects/EHRI/test_harvest_data/opt/oai-pmh-harvester"
+#ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-pmh-harvester"
+#rs-ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-rs-harvester"
+#pmh-ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-pmh-harvester"
 #initial-validation-folder: "D:/projects/EHRI/rc-aggregator/input-validaton-folder"
 #pre-ingest-dir: "D:/projects/EHRI/rc-aggregator/input-validaton-folder/"
 
-rs-ead-input-dir: "/home/boyans/data/opt/oai-rs-harvester"
-pmh-ead-input-dir: "/home/boyans/data/opt/oai-pmh-harvester"
-initial-validation-folder: "/home/boyans/data/opt/validation-folder"
-pre-ingest-dir: "/home/boyans/data/opt/validation-folder"
+rs-ead-input-dir: "/var/opt/oai-rs-harvester"
+pmh-ead-input-dir: "/var/opt/oai-pmh-harvester"
+initial-validation-folder: "/var/opt/validation-folder"
+pre-ingest-dir: "/var/opt/validation-folder"
+
+#rs-ead-input-dir: "/home/boyans/data/opt/oai-rs-harvester"
+#pmh-ead-input-dir: "/home/boyans/data/opt/oai-pmh-harvester"
+#initial-validation-folder: "/home/boyans/data/opt/validation-folder"
+#pre-ingest-dir: "/home/boyans/data/opt/validation-folder"
 

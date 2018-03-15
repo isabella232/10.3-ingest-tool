@@ -303,7 +303,7 @@ public class ProcessUpdateService {
                 String url =  entry.getValue().getRepository();
 
 
-                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=false";
+                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true";
                 URL obj = null;
                 try {
                     obj = new URL(url + "?" + urlParameters);
@@ -356,10 +356,10 @@ public class ProcessUpdateService {
         String failedDatasets = "";
         for (Map.Entry<String, Boolean> entry : validaitonResults.entrySet()) {
             if (!entry.getValue()) {
-                if (!failedDatasets.isEmpty()) failedDatasets += ", " + entry.getKey();
+                failedDatasets += " " + entry.getKey() + " - Successfully ingested! \n";
             }
             else {
-                failedDatasets = entry.getKey();
+                failedDatasets += " " + entry.getKey() + " - Ingestion error! Please check the validation report!\n";
             }
         }
         new SendMail().send(failedDatasets);

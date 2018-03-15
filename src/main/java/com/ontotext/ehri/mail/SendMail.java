@@ -36,11 +36,11 @@ public class SendMail {
                 });
 
         try {
-
+/*,francesco.gelati@arch.be,dirk.roorda@dans.knaw.nl*/
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress("ehri.ingest@gmail.com"));
             message.setRecipients(Message.RecipientType.TO,
-                    InternetAddress.parse("boian.s.simeonov@gmail.com"));
+                    InternetAddress.parse("boyan.simeonov@ontotext.com"));
             message.setSubject("EHRI Auto generated ingest report");
             message.setText("The following datasets failed to ingest, because of validation errors:\n" +
                     datasets);
