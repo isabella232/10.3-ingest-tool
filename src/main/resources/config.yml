@@ -40,16 +40,17 @@ ead-namespaces:
   "xsi": "http://www.w3.org/2001/XMLSchema-instance"
 
 
-#ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-pmh-harvester"
-#rs-ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-rs-harvester"
-#pmh-ead-input-dir: "D:/projects/EHRI/data/data/opt/oai-pmh-harvester"
-#initial-validation-folder: "D:/projects/EHRI/rc-aggregator/input-validaton-folder"
-#pre-ingest-dir: "D:/projects/EHRI/rc-aggregator/input-validaton-folder/"
+#ead-input-dir: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/opt/oai-pmh-harvester"
+rs-ead-input-dir: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/opt/oai-rs-harvester"
+pmh-ead-input-dir: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/opt/oai-pmh-harvester"
+initial-validation-folder: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/input-validaton-folder"
+pre-ingest-dir: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/input-validaton-folder"
+pre-processing-scripts-dir: "/home/patzo/Work/EU-projects/EHRI/10.3-ingest-tool/data/opt/pre-processing-scripts"
 
-rs-ead-input-dir: "/var/opt/oai-rs-harvester"
-pmh-ead-input-dir: "/var/opt/oai-pmh-harvester"
-initial-validation-folder: "/var/opt/validation-folder"
-pre-ingest-dir: "/var/opt/validation-folder"
+#rs-ead-input-dir: "/var/opt/oai-rs-harvester"
+#pmh-ead-input-dir: "/var/opt/oai-pmh-harvester"
+#initial-validation-folder: "/var/opt/validation-folder"
+#pre-ingest-dir: "/var/opt/validation-folder"
 
 #rs-ead-input-dir: "/home/boyans/data/opt/oai-rs-harvester"
 #pmh-ead-input-dir: "/home/boyans/data/opt/oai-pmh-harvester"
