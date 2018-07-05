@@ -68,7 +68,7 @@ public class ResourceService {
         return names;
     }
 
-    private static String[] listDirContentsPaths(String path) {
+    public static String[] listDirContentsPaths(String path) {
         File dir = new File(path);
         File[] contents = dir.listFiles();
 

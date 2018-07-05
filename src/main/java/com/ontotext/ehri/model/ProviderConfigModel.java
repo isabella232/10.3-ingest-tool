@@ -14,6 +14,7 @@ public class ProviderConfigModel {
     private String log;
     private String validationErrors;
     private String eadFolderName;
+    private String preProcessingScriptsDir;
 
     public String getEadFolderName() {
         return eadFolderName;
@@ -85,5 +86,13 @@ public class ProviderConfigModel {
 
     public void setEnrichments(String enrichments) {
         this.enrichments = enrichments;
+    }
+
+    public String getPreProcessingScriptsDir() {
+        return preProcessingScriptsDir;
+    }
+
+    public void setPreProcessingScriptsDir(String preProcessingScriptsDir) {
+        this.preProcessingScriptsDir = preProcessingScriptsDir;
     }
 }

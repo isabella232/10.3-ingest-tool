@@ -3,6 +3,7 @@ package com.ontotext.ehri.services;
 import com.ontotext.ehri.mail.SendMail;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
+import com.ontotext.ehri.model.ValidationResultModel;
 import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -10,7 +11,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.compress.utils.IOUtils;
-import org.python.antlr.ast.Str;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +29,9 @@ public class ProcessUpdateService {
 
     @Autowired
     private ConfigurationService configurationService;
+
+    @Autowired
+    private ResourceService resourceService;
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProcessUpdateService.class);
     private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
@@ -317,10 +320,11 @@ public class ProcessUpdateService {
         } catch (IOException e){e.printStackTrace();}
     }
 
-    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
+    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, ValidationResultModel> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-            if (!validaitonResults.get(entry.getValue().getEadFolderName())) {
+            String eadFolderName = entry.getValue().getEadFolderName();
+            if (validaitonResults.containsKey(eadFolderName) && !validaitonResults.get(eadFolderName).getValid()) {
                 String url =  entry.getValue().getRepository();
 
 
@@ -358,6 +362,8 @@ public class ProcessUpdateService {
                     }
                     in.close();
 
+                    validaitonResults.get(eadFolderName).setHttpResponse(response.toString());
+
                     //print result
                     System.out.println(response.toString());
 
@@ -373,15 +379,17 @@ public class ProcessUpdateService {
         }
     }
 
-    public void reportDatasetsWithErrors(Map<String, Boolean> validaitonResults) {
+    public void reportDatasetsWithErrors(Map<String, ValidationResultModel> validaitonResults) {
         String failedDatasets = "";
-        for (Map.Entry<String, Boolean> entry : validaitonResults.entrySet()) {
-            if (!entry.getValue()) {
+        for (Map.Entry<String, ValidationResultModel> entry : validaitonResults.entrySet()) {
+            if (!entry.getValue().getValid()) {
                 failedDatasets += " " + entry.getKey() + " - Successfully ingested! \n";
             }
             else {
                 failedDatasets += " " + entry.getKey() + " - Ingestion error! Please check the validation report!\n";
             }
+            failedDatasets += " " + entry.getKey() + " - HTTP response: " + entry.getValue().getHttpResponse();
+            failedDatasets += " " + entry.getKey() + " - validity: \n" + entry.getValue().getValidation() + "\n";
         }
         new SendMail().send(failedDatasets);
     }
@@ -428,19 +436,36 @@ public class ProcessUpdateService {
         }
     }
 
-    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String[] scripts){
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections,
+                                                   Map<String, ProviderConfigModel> chiIngestConfig){
         Map<String, File[]> preProcessed = compressedCollections;
         int i = 0;
-        for (String script : scripts){
-            preProcessed = pythonPreProcessing(preProcessed, script, i + "");
-            i++;
-        }
 
+        for (Map.Entry<String, ProviderConfigModel> conf : chiIngestConfig.entrySet()) {
+            String preProcessing = conf.getValue().getPreProcessingScriptsDir();
+            if (!compressedCollections.containsKey(conf.getKey()))
+                continue;
+            if (preProcessing == null) {
+                preProcessed.put(conf.getKey(), compressedCollections.get(conf.getKey()));
+            } else {
+                for (String script : ResourceService.listDirContentsPaths(
+                        conf.getValue().getPreProcessingScriptsDir())) {
+                    preProcessed = pythonPreProcessing(preProcessed, script, i + "", conf.getKey());
+                    i++;
+                }
+            }
+        }
+        //
+        Set<String> missingInConfig = compressedCollections.keySet();
+        missingInConfig.removeAll(chiIngestConfig.keySet());
+        for(String missingKey : missingInConfig){
+            preProcessed.put(missingKey, compressedCollections.get(missingKey));
+        }
         return preProcessed;
     }
 
     public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String script,
-                                                   String suffix){
+                                                   String suffix, String key){
         Map<String, File[]> preProcessed = new HashMap<>();
 
         for (Map.Entry<String, File[]> files : compressedCollections.entrySet()) {
@@ -450,7 +475,7 @@ public class ProcessUpdateService {
                         + File.separator + "pre-processing-" + suffix + File.separator + file.getName();
 
 
-                if (files.getKey().contains("de-barch"))
+                if (files.getKey().contains(key))
 
                     try {
                         String command = "python3.5 " + script + " "
