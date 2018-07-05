@@ -43,7 +43,9 @@ public class RestController {
         Date now = processUpdateService.prepareForValidation(changes);
         Map<String, File[]> eadFiles = processUpdateService.listValidationFolderFiles(now);
         processUpdateService.fixInputValidationFolder(eadFiles);
-        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(eadFiles, now);
+        Map<String, File[]> preProcessed = processUpdateService.pythonPreProcessing(eadFiles, resourceService.listPreProcessingDir());
+
+        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(preProcessed, now);
 
         Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
 

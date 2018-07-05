@@ -6,8 +6,11 @@ import com.ontotext.ehri.model.ProviderConfigModel;
 import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.compress.utils.IOUtils;
+import org.python.antlr.ast.Str;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class ProcessUpdateService {
 
     private String inputValidatinFolder = Configuration.getString("initial-validation-folder");
     private final String USER_AGENT = "Mozilla/5.0";
+
 
 
     public Date prepareForValidation(Map<String, List<FileMetaModel>> files) {
@@ -150,7 +154,7 @@ public class ProcessUpdateService {
     }
 
     private ArrayList<File> listAllFiles(List<File> locations) {
-       ArrayList<File> result = new ArrayList();
+        ArrayList<File> result = new ArrayList();
         for (File location : locations) {
             if (location.exists() && location.isDirectory()) {
                 result.addAll(Arrays.asList(location.listFiles()));
@@ -296,6 +300,23 @@ public class ProcessUpdateService {
         return compressedCollection;
     }
 
+    public static void decompress(String in, String out)  {
+        try (TarArchiveInputStream fin = new TarArchiveInputStream(new FileInputStream(in))){
+            TarArchiveEntry entry;
+            while ((entry = fin.getNextTarEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                File curfile = new File(out + entry.getName());
+                File parent = curfile.getParentFile();
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+                IOUtils.copy(fin, new FileOutputStream(curfile));
+            }
+        } catch (IOException e){e.printStackTrace();}
+    }
+
     public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
@@ -405,5 +426,51 @@ public class ProcessUpdateService {
                 }
             }
         }
+    }
+
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String[] scripts){
+        Map<String, File[]> preProcessed = compressedCollections;
+        int i = 0;
+        for (String script : scripts){
+            preProcessed = pythonPreProcessing(preProcessed, script, i + "");
+            i++;
+        }
+
+        return preProcessed;
+    }
+
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String script,
+                                                   String suffix){
+        Map<String, File[]> preProcessed = new HashMap<>();
+
+        for (Map.Entry<String, File[]> files : compressedCollections.entrySet()) {
+            List<File> newFiles = new ArrayList<>();
+            for (File file: files.getValue()) {
+                String newPath = file.getParentFile().getParentFile().getAbsolutePath()
+                        + File.separator + "pre-processing-" + suffix + File.separator + file.getName();
+
+
+                if (files.getKey().contains("de-barch"))
+
+                    try {
+                        String command = "python3.5 " + script + " "
+                                + file.getAbsolutePath() + " "
+                                + newPath;
+                        Process p = Runtime.getRuntime().exec(command);
+                        p.waitFor();
+                    } catch (IOException|InterruptedException e) {e.printStackTrace();}
+                else {
+                    try {
+                        FileUtils.copyFile(file, new File(newPath));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                newFiles.add(new File(newPath));
+            }
+
+            preProcessed.put(files.getKey(), newFiles.toArray(new File[] {}));
+        }
+        return preProcessed;
     }
 }
