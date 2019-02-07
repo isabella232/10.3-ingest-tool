@@ -35,11 +35,16 @@ public class ValidationService {
                 System.out.println("validation- " + validity);
 
                 if (!validity.isEmpty()) {
-                    validationErrors.put(provider.getName(), true);
-                    Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
-                    LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
-                } else {
-                    validationErrors.put(provider.getName(), false);
+                    Pattern errors = Pattern.compile("=[1-9]");
+                    Matcher numErrorsMatcher = errors.matcher(validity);
+                    if (numErrorsMatcher.find()) {
+                        validationErrors.put(provider.getName(), true);
+                        Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
+                        LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
+                    }
+                    else {
+                        validationErrors.put(provider.getName(), false);
+                    }
                 }
 
             } catch (IOException e) {

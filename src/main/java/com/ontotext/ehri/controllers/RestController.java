@@ -39,17 +39,19 @@ public class RestController {
 
     @RequestMapping(value = "/processUpdates", method = RequestMethod.GET)
     public Map<String, List<FileMetaModel>> processUpdate() throws IOException, URISyntaxException {
-        Map<String, List<FileMetaModel>> changes =  processUpdateService.checkForChanges();
-        Date now = processUpdateService.prepareForValidation(changes);
+        Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
+        Map<String, List<FileMetaModel>> changes =  processUpdateService.checkForChanges(chiIngestConfig);
+        Date now = processUpdateService.prepareForValidation(changes, chiIngestConfig);
         Map<String, File[]> eadFiles = processUpdateService.listValidationFolderFiles(now);
         processUpdateService.fixInputValidationFolder(eadFiles);
         Map<String, File> compressedCollections = processUpdateService.compressFileCollection(eadFiles, now);
 
-        Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
+
 
         Map<String, Boolean> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
         processUpdateService.addEADFileLocation(chiIngestConfig, compressedCollections);
         processUpdateService.processIngest(chiIngestConfig, validationResults);
+//        processUpdateService.ingest2(chiIngestConfig, validationResults);
         processUpdateService.reportDatasetsWithErrors(validationResults);
 
         return changes;

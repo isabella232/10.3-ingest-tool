@@ -14,6 +14,24 @@ public class ProviderConfigModel {
     private String log;
     private String validationErrors;
     private String eadFolderName;
+    private String allowUpdate;
+    private String tolerant;
+
+    public String getTolerant() {
+        return tolerant;
+    }
+
+    public void setTolerant(String tolerant) {
+        this.tolerant = tolerant;
+    }
+
+    public String getAllowUpdate() {
+        return allowUpdate;
+    }
+
+    public void setAllowUpdate(String allowUpdate) {
+        this.allowUpdate = allowUpdate;
+    }
 
     public String getEadFolderName() {
         return eadFolderName;

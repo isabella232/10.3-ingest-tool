@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
+import com.ontotext.ehri.tools.Configuration;
 import com.thoughtworks.xstream.XStream;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ public class ConfigurationService {
     public Map<String, List<FileMetaModel>> loadSavedConfig(){
         XStream xStream = new XStream();
         xStream.alias("savedConfig", FileMetaModel.class);
-        File file = new File(System.getProperty("user.home") + "/.EHRI/sync.xml");
+        File file = new File(Configuration.getString("server-config-folder") + "/.EHRI/sync.xml");
         Map<String, List<FileMetaModel>> data = null;
         if (file.exists()) {
             data = (Map<String, List<FileMetaModel>>) xStream.fromXML(file);
@@ -38,7 +39,7 @@ public class ConfigurationService {
     public Map<String, ProviderConfigModel>  loadCHIIngestConfig() throws IOException {
 
         Gson gson = new Gson();
-        JsonReader reader = new JsonReader(new FileReader(new File(System.getProperty("user.home") + "/.EHRI/chi-config.json")));
+        JsonReader reader = new JsonReader(new FileReader(new File(Configuration.getString("server-config-folder") + "/.EHRI/chi-config.json")));
 
         return gson.fromJson(reader, CONFIG_TYPE);
     }
@@ -52,7 +53,7 @@ public class ConfigurationService {
     }
 
     private void writeToFile(String data, String resource) {
-        File file = new File(System.getProperty("user.home") + "/.EHRI");
+        File file = new File(Configuration.getString("server-config-folder") + "/.EHRI");
         if (!file.exists()) {
             file.mkdir();
         }

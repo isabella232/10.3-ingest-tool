@@ -8,6 +8,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,13 +43,18 @@ public class ProcessUpdateService {
     private final String USER_AGENT = "Mozilla/5.0";
 
 
-    public Date prepareForValidation(Map<String, List<FileMetaModel>> files) {
+    public Date prepareForValidation(Map<String, List<FileMetaModel>> files, Map<String, ProviderConfigModel> chiIngestConfig) {
         Date now = new Date();
         File file = new File(inputValidatinFolder, Configuration.DATE_FORMAT.format(now));
         file.mkdir();
 
         for (Map.Entry<String, List<FileMetaModel>> entry : files.entrySet()) {
-            File provider = new File(file.getAbsolutePath(), entry.getKey());
+//            String pr[] = entry.getKey().split("/");
+//            String prName = pr[pr.length - 1];
+
+            String prName = getCHIName(entry.getKey(), chiIngestConfig);
+
+            File provider = new File(file.getAbsolutePath(), prName);
             if (!provider.exists()) provider.mkdir();
             List<FileMetaModel> metaData = entry.getValue();
             for (FileMetaModel model : metaData) {
@@ -56,16 +69,33 @@ public class ProcessUpdateService {
         return now;
     }
 
-    public Map<String, List<FileMetaModel>> checkForChanges() throws IOException, URISyntaxException {
+    public String getCHIName(String fileLocation, Map<String, ProviderConfigModel> chiIngestConfig) {
+        String name = "";
+        for (Map.Entry<String, ProviderConfigModel> entry : chiIngestConfig.entrySet()) {
+            if (entry.getValue().getEadFileLocation().equals(fileLocation)) {
+                name = entry.getValue().getName();
+            }
+        }
+
+        return name;
+    }
+
+    public Map<String, List<FileMetaModel>> checkForChanges(Map<String, ProviderConfigModel> chiIngestConfig) throws IOException, URISyntaxException {
 
         Map<String, List<FileMetaModel>> syncMetaData = configurationService.loadSavedConfig();
+        Map<String, List<FileMetaModel>> newChangesMap = new HashMap<>();
 
-        Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
-        Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
-        Map<String, List<FileMetaModel>> changes = deepMerge(rsChanges, PMHChanges);
-        configurationService.saveMetaData(changes);
+        for (Map.Entry<String, ProviderConfigModel> entry : chiIngestConfig.entrySet()) {
+            Map<String, List<FileMetaModel>> providerChanges = checkChanges(entry.getValue().getEadFileLocation(), syncMetaData);
+            deepMerge(newChangesMap, providerChanges);
+        }
 
-        return changes;
+//        Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
+//        Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
+//        Map<String, List<FileMetaModel>> changes = deepMerge(rsChanges, PMHChanges);
+        configurationService.saveMetaData(newChangesMap);
+
+        return newChangesMap;
     }
 
     public Map deepMerge(Map original, Map newMap) {
@@ -133,16 +163,25 @@ public class ProcessUpdateService {
 
     private Map<String, List<FileMetaModel>> initiateFileStatus(String location) {
         Map<String, List<FileMetaModel>> metaDataCollection = new HashMap<>();
+        List<File> eadFiles = new ArrayList<>();
         File file = new File(location);
+        List<FileMetaModel> metaData;
         if (file.exists()) {
             File[] providers = file.listFiles();
 //            providers = listAllFiles(Arrays.asList(file.listFiles()));
             if (providers != null) {
                 for (File provider : providers) {
-                    List<File> eadFiles = readEADFiles(provider);
-                    List<FileMetaModel> metaData = collectMetaData(eadFiles);
-                    metaDataCollection.put(provider.getName(), metaData);
+                    if (provider.isFile()) {
+                        eadFiles.add(provider);
+                    }
+                    else if (provider.isDirectory()) {
+                        List<File> files = readEADFiles(provider);
+                        eadFiles.addAll(files);
+                    }
+
                 }
+                metaData = collectMetaData(eadFiles);
+                metaDataCollection.put(location, metaData);
             }
         }
 
@@ -179,6 +218,7 @@ public class ProcessUpdateService {
         List<FileMetaModel> metaDataCollection = new ArrayList<>();
         if (fileCollection != null && fileCollection.size() > 0) {
             for (File file : fileCollection) {
+                if (file.getAbsolutePath().contains("config")) continue;
                 FileMetaModel metaModel = new FileMetaModel();
                 metaModel.setFileName(file.getName());
                 metaModel.setLastModified(file.lastModified());
@@ -201,7 +241,7 @@ public class ProcessUpdateService {
             }
         }
 
-        List<File> eadFiles = null;
+        List<File> eadFiles = new ArrayList<>();
         if (contentDir != null && contentDir.isDirectory()) {
             eadFiles = (List<File>) FileUtils.listFiles(contentDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         }
@@ -235,7 +275,11 @@ public class ProcessUpdateService {
             for (File file : providers) {
                 File eadFileDir = new File(file.getAbsolutePath() + File.separator + "ead");
                 if (eadFileDir.exists()) {
-                    File[] eadFiles = eadFileDir.listFiles();
+                    File[] eadFiles = eadFileDir.listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                            return name.toLowerCase().endsWith(".xml");
+                        }
+                    });
                     filesPerProvider.put(file.getName(), eadFiles);
                 }
             }
@@ -299,11 +343,15 @@ public class ProcessUpdateService {
     public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-            if (!validaitonResults.get(entry.getValue().getEadFolderName())) {
-                String url =  entry.getValue().getRepository();
+            if ((entry.getValue().getEadFolderName() != null && validaitonResults.get(entry.getValue().getEadFolderName()) != null
+                    && !validaitonResults.get(entry.getValue().getEadFolderName())) || Boolean.parseBoolean(entry.getValue().getTolerant())) {
+                String url = entry.getValue().getRepository();
 
 
-                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true";
+                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() +
+                        "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true" + "&allow-update=" + entry.getValue().getAllowUpdate() +
+                        "&tolerant=" + entry.getValue().getTolerant();
+                LOGGER.info("Ingesting: " + urlParameters);
                 URL obj = null;
                 try {
                     obj = new URL(url + "?" + urlParameters);
@@ -314,18 +362,22 @@ public class ProcessUpdateService {
                     con.setRequestMethod("POST");
                     con.setRequestProperty("Content-type", "application/octet-stream");
                     con.setRequestProperty("X-User", "user000958");
+                    con.setRequestProperty("Content-Length", String.valueOf(new File(entry.getValue().getEadFileLocation()).length()));
 
                     // Send post request
                     con.setDoOutput(true);
                     DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+                    LOGGER.info("File location: " + entry.getValue().getEadFileLocation());
                     wr.write(readAndClose(new FileInputStream(new File(entry.getValue().getEadFileLocation()))));
                     wr.flush();
                     wr.close();
 
                     int responseCode = con.getResponseCode();
-                    System.out.println("\nSending 'POST' request to URL : " + url);
-                    System.out.println("Post parameters : " + urlParameters);
-                    System.out.println("Response Code : " + responseCode);
+
+                    LOGGER.info("\nSending 'POST' request to URL : " + url);
+                    LOGGER.info("Post parameters : " + urlParameters);
+                    LOGGER.info("Response Code : " + responseCode);
+                    LOGGER.info("Responce Message : " + con.getResponseMessage());
 
                     BufferedReader in = new BufferedReader(
                             new InputStreamReader(con.getInputStream()));
@@ -338,12 +390,12 @@ public class ProcessUpdateService {
                     in.close();
 
                     //print result
-                    System.out.println(response.toString());
+                    LOGGER.info(response.toString());
 
                 } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                    LOGGER.error(e.getMessage());
                 } catch (ProtocolException e) {
-                    e.printStackTrace();
+                    LOGGER.error(e.getMessage());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -351,6 +403,40 @@ public class ProcessUpdateService {
             }
         }
     }
+
+//    public void ingest2(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults)
+//            throws ClientProtocolException, IOException {
+//
+//        for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
+//            if (entry.getValue().getEadFolderName() != null && validaitonResults.get(entry.getValue().getEadFolderName()) != null && !validaitonResults.get(entry.getValue().getEadFolderName())) {
+//                String url = entry.getValue().getRepository();
+//
+//
+//                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true";
+//                LOGGER.info("Ingesting: " + urlParameters);
+//                URL obj = null;
+//
+//                obj = new URL(url + "?" + urlParameters);
+//
+//                CloseableHttpClient client = HttpClients.createDefault();
+//                HttpPost httpPost = new HttpPost(obj.toString());
+//
+//                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+//                builder.addTextBody("X-User", "user000958");
+//                builder.addTextBody("Content-type", "application/octet-stream");
+//                builder.addBinaryBody("file", new File(entry.getValue().getEadFileLocation()),
+//                        ContentType.APPLICATION_OCTET_STREAM, entry.getValue().getEadFileLocation());
+//
+//                HttpEntity multipart = builder.build();
+//                httpPost.setEntity(multipart);
+//
+//                CloseableHttpResponse response = client.execute(httpPost);
+////        assertThat(response.getStatusLine().getStatusCode(), equalTo(200));
+//                LOGGER.info(String.valueOf(response.getStatusLine().getStatusCode()));
+//                client.close();
+//            }
+//        }
+//    }
 
     public void reportDatasetsWithErrors(Map<String, Boolean> validaitonResults) {
         String failedDatasets = "";
