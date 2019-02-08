@@ -35,6 +35,9 @@ public class ProcessUpdateService {
     @Autowired
     private ConfigurationService configurationService;
 
+    @Autowired
+    private ResourceService resourceService;
+
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProcessUpdateService.class);
     private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
     private String PMHFileLocation = Configuration.getString("pmh-ead-input-dir");
@@ -340,12 +343,32 @@ public class ProcessUpdateService {
         return compressedCollection;
     }
 
-    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
+    public static void decompress(String in, String out)  {
+        try (TarArchiveInputStream fin = new TarArchiveInputStream(new FileInputStream(in))){
+            TarArchiveEntry entry;
+            while ((entry = fin.getNextTarEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                File curfile = new File(out + entry.getName());
+                File parent = curfile.getParentFile();
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+                IOUtils.copy(fin, new FileOutputStream(curfile));
+            }
+        } catch (IOException e){e.printStackTrace();}
+    }
+
+    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, ValidationResultModel> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
             if ((entry.getValue().getEadFolderName() != null && validaitonResults.get(entry.getValue().getEadFolderName()) != null
                     && !validaitonResults.get(entry.getValue().getEadFolderName())) || Boolean.parseBoolean(entry.getValue().getTolerant())) {
                 String url = entry.getValue().getRepository();
+            String eadFolderName = entry.getValue().getEadFolderName();
+            if (validaitonResults.containsKey(eadFolderName) && !validaitonResults.get(eadFolderName).getValid()) {
+                String url =  entry.getValue().getRepository();
 
 
                 String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() +
@@ -389,13 +412,15 @@ public class ProcessUpdateService {
                     }
                     in.close();
 
+                    validaitonResults.get(eadFolderName).setHttpResponse(response.toString());
+
                     //print result
-                    LOGGER.info(response.toString());
+                    System.out.println(response.toString());
 
                 } catch (MalformedURLException e) {
-                    LOGGER.error(e.getMessage());
+                    e.printStackTrace();
                 } catch (ProtocolException e) {
-                    LOGGER.error(e.getMessage());
+                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -404,49 +429,17 @@ public class ProcessUpdateService {
         }
     }
 
-//    public void ingest2(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults)
-//            throws ClientProtocolException, IOException {
-//
-//        for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-//            if (entry.getValue().getEadFolderName() != null && validaitonResults.get(entry.getValue().getEadFolderName()) != null && !validaitonResults.get(entry.getValue().getEadFolderName())) {
-//                String url = entry.getValue().getRepository();
-//
-//
-//                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true";
-//                LOGGER.info("Ingesting: " + urlParameters);
-//                URL obj = null;
-//
-//                obj = new URL(url + "?" + urlParameters);
-//
-//                CloseableHttpClient client = HttpClients.createDefault();
-//                HttpPost httpPost = new HttpPost(obj.toString());
-//
-//                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-//                builder.addTextBody("X-User", "user000958");
-//                builder.addTextBody("Content-type", "application/octet-stream");
-//                builder.addBinaryBody("file", new File(entry.getValue().getEadFileLocation()),
-//                        ContentType.APPLICATION_OCTET_STREAM, entry.getValue().getEadFileLocation());
-//
-//                HttpEntity multipart = builder.build();
-//                httpPost.setEntity(multipart);
-//
-//                CloseableHttpResponse response = client.execute(httpPost);
-////        assertThat(response.getStatusLine().getStatusCode(), equalTo(200));
-//                LOGGER.info(String.valueOf(response.getStatusLine().getStatusCode()));
-//                client.close();
-//            }
-//        }
-//    }
-
-    public void reportDatasetsWithErrors(Map<String, Boolean> validaitonResults) {
+    public void reportDatasetsWithErrors(Map<String, ValidationResultModel> validaitonResults) {
         String failedDatasets = "";
-        for (Map.Entry<String, Boolean> entry : validaitonResults.entrySet()) {
-            if (!entry.getValue()) {
+        for (Map.Entry<String, ValidationResultModel> entry : validaitonResults.entrySet()) {
+            if (!entry.getValue().getValid()) {
                 failedDatasets += " " + entry.getKey() + " - Successfully ingested! \n";
             }
             else {
                 failedDatasets += " " + entry.getKey() + " - Ingestion error! Please check the validation report!\n";
             }
+            failedDatasets += " " + entry.getKey() + " - HTTP response: " + entry.getValue().getHttpResponse();
+            failedDatasets += " " + entry.getKey() + " - validity: \n" + entry.getValue().getValidation() + "\n";
         }
         new SendMail().send(failedDatasets);
     }
@@ -491,5 +484,68 @@ public class ProcessUpdateService {
                 }
             }
         }
+    }
+
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections,
+                                                   Map<String, ProviderConfigModel> chiIngestConfig){
+        Map<String, File[]> preProcessed = compressedCollections;
+        int i = 0;
+
+        for (Map.Entry<String, ProviderConfigModel> conf : chiIngestConfig.entrySet()) {
+            String preProcessing = conf.getValue().getPreProcessingScriptsDir();
+            if (!compressedCollections.containsKey(conf.getKey()))
+                continue;
+            if (preProcessing == null) {
+                preProcessed.put(conf.getKey(), compressedCollections.get(conf.getKey()));
+            } else {
+                for (String script : ResourceService.listDirContentsPaths(
+                        conf.getValue().getPreProcessingScriptsDir())) {
+                    preProcessed = pythonPreProcessing(preProcessed, script, i + "", conf.getKey());
+                    i++;
+                }
+            }
+        }
+        //
+        Set<String> missingInConfig = compressedCollections.keySet();
+        missingInConfig.removeAll(chiIngestConfig.keySet());
+        for(String missingKey : missingInConfig){
+            preProcessed.put(missingKey, compressedCollections.get(missingKey));
+        }
+        return preProcessed;
+    }
+
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String script,
+                                                   String suffix, String key){
+        Map<String, File[]> preProcessed = new HashMap<>();
+
+        for (Map.Entry<String, File[]> files : compressedCollections.entrySet()) {
+            List<File> newFiles = new ArrayList<>();
+            for (File file: files.getValue()) {
+                String newPath = file.getParentFile().getParentFile().getAbsolutePath()
+                        + File.separator + "pre-processing-" + suffix + File.separator + file.getName();
+
+
+                if (files.getKey().contains(key))
+
+                    try {
+                        String command = "python3.5 " + script + " "
+                                + file.getAbsolutePath() + " "
+                                + newPath;
+                        Process p = Runtime.getRuntime().exec(command);
+                        p.waitFor();
+                    } catch (IOException|InterruptedException e) {e.printStackTrace();}
+                else {
+                    try {
+                        FileUtils.copyFile(file, new File(newPath));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                newFiles.add(new File(newPath));
+            }
+
+            preProcessed.put(files.getKey(), newFiles.toArray(new File[] {}));
+        }
+        return preProcessed;
     }
 }

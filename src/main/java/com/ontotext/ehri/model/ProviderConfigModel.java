@@ -32,6 +32,7 @@ public class ProviderConfigModel {
     public void setAllowUpdate(String allowUpdate) {
         this.allowUpdate = allowUpdate;
     }
+    private String preProcessingScriptsDir;
 
     public String getEadFolderName() {
         return eadFolderName;
@@ -103,5 +104,13 @@ public class ProviderConfigModel {
 
     public void setEnrichments(String enrichments) {
         this.enrichments = enrichments;
+    }
+
+    public String getPreProcessingScriptsDir() {
+        return preProcessingScriptsDir;
+    }
+
+    public void setPreProcessingScriptsDir(String preProcessingScriptsDir) {
+        this.preProcessingScriptsDir = preProcessingScriptsDir;
     }
 }

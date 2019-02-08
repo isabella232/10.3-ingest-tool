@@ -32,6 +32,10 @@ public class ResourceService {
         dir.mkdir();
     }
 
+    public String[] listPreProcessingDir() {
+        return listDirContentsPaths(Configuration.getString("pre-processing-scripts-dir"));
+    }
+
     public String listInputDirContents() {
         return listDirContents(Configuration.getString("input-dir"), SEPARATOR);
     }
@@ -59,6 +63,18 @@ public class ResourceService {
         String[] names = new String[contents.length];
         for (int i = 0; i < contents.length; i++) {
             names[i] = contents[i].getName();
+        }
+
+        return names;
+    }
+
+    public static String[] listDirContentsPaths(String path) {
+        File dir = new File(path);
+        File[] contents = dir.listFiles();
+
+        String[] names = new String[contents.length];
+        for (int i = 0; i < contents.length; i++) {
+            names[i] = contents[i].getAbsolutePath();
         }
 
         return names;

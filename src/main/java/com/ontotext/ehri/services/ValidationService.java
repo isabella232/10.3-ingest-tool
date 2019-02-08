@@ -2,6 +2,7 @@ package com.ontotext.ehri.services;
 
 import com.ontotext.ehri.model.ProviderConfigModel;
 import com.ontotext.ehri.model.TransformationModel;
+import com.ontotext.ehri.model.ValidationResultModel;
 import com.ontotext.ehri.tools.*;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -25,27 +26,24 @@ import java.util.regex.Pattern;
 public class ValidationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidationService.class);
 
-    public Map<String, Boolean> validateDirectory(TransformationModel model, Date requestDate, String path, boolean validation, Map<String, ProviderConfigModel> chiIngestConfig) {
-        Map<String, Boolean> validationErrors = new HashMap<>();
+    public Map<String, ValidationResultModel> validateDirectory(TransformationModel model, Date requestDate, String path, boolean validation, Map<String, ProviderConfigModel> chiIngestConfig) {
+        Map<String, ValidationResultModel> validationErrors = new HashMap<>();
         File validationDir = getInitialValidationFolder(requestDate);
         File providers[] = validationDir.listFiles();
         for (File provider : providers) {
             try {
                 String validity = validate(model, requestDate, path, validation, provider);
                 System.out.println("validation- " + validity);
-
+                ValidationResultModel validationResult = new ValidationResultModel();
                 if (!validity.isEmpty()) {
-                    Pattern errors = Pattern.compile("=[1-9]");
-                    Matcher numErrorsMatcher = errors.matcher(validity);
-                    if (numErrorsMatcher.find()) {
-                        validationErrors.put(provider.getName(), true);
-                        Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
-                        LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
-                    }
-                    else {
-                        validationErrors.put(provider.getName(), false);
-                    }
+                    validationResult.setValid(true);
+                    Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
+                    LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
+                    validationResult.setValidation(validity);
+                } else {
+                    validationResult.setValid(false);
                 }
+                validationErrors.put(provider.getName(), validationResult);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -112,8 +110,9 @@ public class ValidationService {
                 Matcher fileNameMatcher = fileName.matcher(line);
                 Matcher numErrorsMatcher = numErrors.matcher(line);
 
-                if (fileNameMatcher.find()) errors.append("|" + fileNameMatcher.group(1));
-                if (numErrorsMatcher.find()) errors.append("=" + numErrorsMatcher.group(1));
+                if (fileNameMatcher.find()) errors.append("\n" + htmlIndex.getParentFile().getAbsolutePath()
+                        + fileNameMatcher.group(1) + ".html");
+                if (numErrorsMatcher.find()) errors.append(" = " + numErrorsMatcher.group(1));
             }
 
         } catch (IOException e) {
