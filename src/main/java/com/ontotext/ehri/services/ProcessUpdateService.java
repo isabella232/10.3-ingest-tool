@@ -3,19 +3,14 @@ package com.ontotext.ehri.services;
 import com.ontotext.ehri.mail.SendMail;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
+import com.ontotext.ehri.model.ValidationResultModel;
 import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,7 +34,7 @@ public class ProcessUpdateService {
     private ResourceService resourceService;
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProcessUpdateService.class);
-    private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
+//    private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
     private String PMHFileLocation = Configuration.getString("pmh-ead-input-dir");
 
     private String inputValidatinFolder = Configuration.getString("initial-validation-folder");
@@ -363,13 +358,9 @@ public class ProcessUpdateService {
     public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, ValidationResultModel> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-            if ((entry.getValue().getEadFolderName() != null && validaitonResults.get(entry.getValue().getEadFolderName()) != null
-                    && !validaitonResults.get(entry.getValue().getEadFolderName())) || Boolean.parseBoolean(entry.getValue().getTolerant())) {
+            if ((entry.getValue().getName() != null && validaitonResults.get(entry.getValue().getName()) != null
+                    && validaitonResults.get(entry.getValue().getName()).getValid()) || Boolean.parseBoolean(entry.getValue().getTolerant())) {
                 String url = entry.getValue().getRepository();
-            String eadFolderName = entry.getValue().getEadFolderName();
-            if (validaitonResults.containsKey(eadFolderName) && !validaitonResults.get(eadFolderName).getValid()) {
-                String url =  entry.getValue().getRepository();
-
 
                 String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() +
                         "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true" + "&allow-update=" + entry.getValue().getAllowUpdate() +
@@ -412,7 +403,7 @@ public class ProcessUpdateService {
                     }
                     in.close();
 
-                    validaitonResults.get(eadFolderName).setHttpResponse(response.toString());
+                    validaitonResults.get(entry.getValue().getName()).setHttpResponse(String.valueOf(responseCode));
 
                     //print result
                     System.out.println(response.toString());
@@ -432,7 +423,7 @@ public class ProcessUpdateService {
     public void reportDatasetsWithErrors(Map<String, ValidationResultModel> validaitonResults) {
         String failedDatasets = "";
         for (Map.Entry<String, ValidationResultModel> entry : validaitonResults.entrySet()) {
-            if (!entry.getValue().getValid()) {
+            if (entry.getValue().getHttpResponse() != null && entry.getValue().getHttpResponse().equals("200")) {
                 failedDatasets += " " + entry.getKey() + " - Successfully ingested! \n";
             }
             else {

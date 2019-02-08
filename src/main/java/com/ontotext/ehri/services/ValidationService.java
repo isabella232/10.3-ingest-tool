@@ -35,13 +35,14 @@ public class ValidationService {
                 String validity = validate(model, requestDate, path, validation, provider);
                 System.out.println("validation- " + validity);
                 ValidationResultModel validationResult = new ValidationResultModel();
-                if (!validity.isEmpty()) {
+                if (!checkValidity(validity)) {
                     validationResult.setValid(true);
                     Files.write(Paths.get(provider + "/" + "validation_result.txt"), validity.getBytes());
-                    LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
                     validationResult.setValidation(validity);
                 } else {
+                    LOGGER.warn( provider + " has validation errors. Please check the report. System continue with the next provider!");
                     validationResult.setValid(false);
+                    validationResult.setValidation(validity);
                 }
                 validationErrors.put(provider.getName(), validationResult);
 
@@ -51,6 +52,14 @@ public class ValidationService {
         }
 
         return validationErrors;
+    }
+
+    private boolean checkValidity(String validity) {
+        Pattern numErrors = Pattern.compile("= [1-9]+");
+        Matcher fileNameMatcher = numErrors.matcher(validity);
+        boolean containErrors = fileNameMatcher.find();
+
+        return containErrors;
     }
 
     public String validate(TransformationModel model, Date requestDate, String path, boolean validation, File outputDir) throws IOException {
