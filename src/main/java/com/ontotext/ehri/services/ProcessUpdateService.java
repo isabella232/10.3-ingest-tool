@@ -3,14 +3,14 @@ package com.ontotext.ehri.services;
 import com.ontotext.ehri.mail.SendMail;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
+import com.ontotext.ehri.model.ValidationResultModel;
 import com.ontotext.ehri.tools.Configuration;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.compress.utils.IOUtils;
-import org.python.antlr.ast.Str;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,22 +30,29 @@ public class ProcessUpdateService {
     @Autowired
     private ConfigurationService configurationService;
 
+    @Autowired
+    private ResourceService resourceService;
+
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProcessUpdateService.class);
-    private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
+//    private String rsFileLocation = Configuration.getString("rs-ead-input-dir");
     private String PMHFileLocation = Configuration.getString("pmh-ead-input-dir");
 
     private String inputValidatinFolder = Configuration.getString("initial-validation-folder");
     private final String USER_AGENT = "Mozilla/5.0";
 
 
-
-    public Date prepareForValidation(Map<String, List<FileMetaModel>> files) {
+    public Date prepareForValidation(Map<String, List<FileMetaModel>> files, Map<String, ProviderConfigModel> chiIngestConfig) {
         Date now = new Date();
         File file = new File(inputValidatinFolder, Configuration.DATE_FORMAT.format(now));
         file.mkdir();
 
         for (Map.Entry<String, List<FileMetaModel>> entry : files.entrySet()) {
-            File provider = new File(file.getAbsolutePath(), entry.getKey());
+//            String pr[] = entry.getKey().split("/");
+//            String prName = pr[pr.length - 1];
+
+            String prName = getCHIName(entry.getKey(), chiIngestConfig);
+
+            File provider = new File(file.getAbsolutePath(), prName);
             if (!provider.exists()) provider.mkdir();
             List<FileMetaModel> metaData = entry.getValue();
             for (FileMetaModel model : metaData) {
@@ -60,16 +67,33 @@ public class ProcessUpdateService {
         return now;
     }
 
-    public Map<String, List<FileMetaModel>> checkForChanges() throws IOException, URISyntaxException {
+    public String getCHIName(String fileLocation, Map<String, ProviderConfigModel> chiIngestConfig) {
+        String name = "";
+        for (Map.Entry<String, ProviderConfigModel> entry : chiIngestConfig.entrySet()) {
+            if (entry.getValue().getEadFileLocation().equals(fileLocation)) {
+                name = entry.getValue().getName();
+            }
+        }
+
+        return name;
+    }
+
+    public Map<String, List<FileMetaModel>> checkForChanges(Map<String, ProviderConfigModel> chiIngestConfig) throws IOException, URISyntaxException {
 
         Map<String, List<FileMetaModel>> syncMetaData = configurationService.loadSavedConfig();
+        Map<String, List<FileMetaModel>> newChangesMap = new HashMap<>();
 
-        Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
-        Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
-        Map<String, List<FileMetaModel>> changes = deepMerge(rsChanges, PMHChanges);
-        configurationService.saveMetaData(changes);
+        for (Map.Entry<String, ProviderConfigModel> entry : chiIngestConfig.entrySet()) {
+            Map<String, List<FileMetaModel>> providerChanges = checkChanges(entry.getValue().getEadFileLocation(), syncMetaData);
+            deepMerge(newChangesMap, providerChanges);
+        }
 
-        return changes;
+//        Map<String, List<FileMetaModel>> rsChanges = checkChanges(rsFileLocation, syncMetaData);
+//        Map<String, List<FileMetaModel>> PMHChanges = checkChanges(PMHFileLocation, syncMetaData);
+//        Map<String, List<FileMetaModel>> changes = deepMerge(rsChanges, PMHChanges);
+        configurationService.saveMetaData(newChangesMap);
+
+        return newChangesMap;
     }
 
     public Map deepMerge(Map original, Map newMap) {
@@ -137,16 +161,25 @@ public class ProcessUpdateService {
 
     private Map<String, List<FileMetaModel>> initiateFileStatus(String location) {
         Map<String, List<FileMetaModel>> metaDataCollection = new HashMap<>();
+        List<File> eadFiles = new ArrayList<>();
         File file = new File(location);
+        List<FileMetaModel> metaData;
         if (file.exists()) {
             File[] providers = file.listFiles();
 //            providers = listAllFiles(Arrays.asList(file.listFiles()));
             if (providers != null) {
                 for (File provider : providers) {
-                    List<File> eadFiles = readEADFiles(provider);
-                    List<FileMetaModel> metaData = collectMetaData(eadFiles);
-                    metaDataCollection.put(provider.getName(), metaData);
+                    if (provider.isFile()) {
+                        eadFiles.add(provider);
+                    }
+                    else if (provider.isDirectory()) {
+                        List<File> files = readEADFiles(provider);
+                        eadFiles.addAll(files);
+                    }
+
                 }
+                metaData = collectMetaData(eadFiles);
+                metaDataCollection.put(location, metaData);
             }
         }
 
@@ -154,7 +187,7 @@ public class ProcessUpdateService {
     }
 
     private ArrayList<File> listAllFiles(List<File> locations) {
-        ArrayList<File> result = new ArrayList();
+       ArrayList<File> result = new ArrayList();
         for (File location : locations) {
             if (location.exists() && location.isDirectory()) {
                 result.addAll(Arrays.asList(location.listFiles()));
@@ -183,6 +216,7 @@ public class ProcessUpdateService {
         List<FileMetaModel> metaDataCollection = new ArrayList<>();
         if (fileCollection != null && fileCollection.size() > 0) {
             for (File file : fileCollection) {
+                if (file.getAbsolutePath().contains("config")) continue;
                 FileMetaModel metaModel = new FileMetaModel();
                 metaModel.setFileName(file.getName());
                 metaModel.setLastModified(file.lastModified());
@@ -205,7 +239,7 @@ public class ProcessUpdateService {
             }
         }
 
-        List<File> eadFiles = null;
+        List<File> eadFiles = new ArrayList<>();
         if (contentDir != null && contentDir.isDirectory()) {
             eadFiles = (List<File>) FileUtils.listFiles(contentDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         }
@@ -239,7 +273,11 @@ public class ProcessUpdateService {
             for (File file : providers) {
                 File eadFileDir = new File(file.getAbsolutePath() + File.separator + "ead");
                 if (eadFileDir.exists()) {
-                    File[] eadFiles = eadFileDir.listFiles();
+                    File[] eadFiles = eadFileDir.listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                            return name.toLowerCase().endsWith(".xml");
+                        }
+                    });
                     filesPerProvider.put(file.getName(), eadFiles);
                 }
             }
@@ -317,14 +355,17 @@ public class ProcessUpdateService {
         } catch (IOException e){e.printStackTrace();}
     }
 
-    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, Boolean> validaitonResults){
+    public void processIngest(Map<String, ProviderConfigModel> providerConfig, Map<String, ValidationResultModel> validaitonResults){
 
         for (Map.Entry<String, ProviderConfigModel> entry : providerConfig.entrySet()) {
-            if (!validaitonResults.get(entry.getValue().getEadFolderName())) {
-                String url =  entry.getValue().getRepository();
+            if ((entry.getValue().getName() != null && validaitonResults.get(entry.getValue().getName()) != null
+                    && validaitonResults.get(entry.getValue().getName()).getValid()) || Boolean.parseBoolean(entry.getValue().getTolerant())) {
+                String url = entry.getValue().getRepository();
 
-
-                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() + "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true";
+                String urlParameters = "scope=" + entry.getValue().getRepositoryName() + "&log=" + entry.getValue().getLog() +
+                        "&properties=" + entry.getValue().getIngestPropertyFile() + "&commit=true" + "&allow-update=" + entry.getValue().getAllowUpdate() +
+                        "&tolerant=" + entry.getValue().getTolerant();
+                LOGGER.info("Ingesting: " + urlParameters);
                 URL obj = null;
                 try {
                     obj = new URL(url + "?" + urlParameters);
@@ -335,18 +376,22 @@ public class ProcessUpdateService {
                     con.setRequestMethod("POST");
                     con.setRequestProperty("Content-type", "application/octet-stream");
                     con.setRequestProperty("X-User", "user000958");
+                    con.setRequestProperty("Content-Length", String.valueOf(new File(entry.getValue().getEadFileLocation()).length()));
 
                     // Send post request
                     con.setDoOutput(true);
                     DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+                    LOGGER.info("File location: " + entry.getValue().getEadFileLocation());
                     wr.write(readAndClose(new FileInputStream(new File(entry.getValue().getEadFileLocation()))));
                     wr.flush();
                     wr.close();
 
                     int responseCode = con.getResponseCode();
-                    System.out.println("\nSending 'POST' request to URL : " + url);
-                    System.out.println("Post parameters : " + urlParameters);
-                    System.out.println("Response Code : " + responseCode);
+
+                    LOGGER.info("\nSending 'POST' request to URL : " + url);
+                    LOGGER.info("Post parameters : " + urlParameters);
+                    LOGGER.info("Response Code : " + responseCode);
+                    LOGGER.info("Responce Message : " + con.getResponseMessage());
 
                     BufferedReader in = new BufferedReader(
                             new InputStreamReader(con.getInputStream()));
@@ -357,6 +402,8 @@ public class ProcessUpdateService {
                         response.append(inputLine);
                     }
                     in.close();
+
+                    validaitonResults.get(entry.getValue().getName()).setHttpResponse(String.valueOf(responseCode));
 
                     //print result
                     System.out.println(response.toString());
@@ -373,15 +420,17 @@ public class ProcessUpdateService {
         }
     }
 
-    public void reportDatasetsWithErrors(Map<String, Boolean> validaitonResults) {
+    public void reportDatasetsWithErrors(Map<String, ValidationResultModel> validaitonResults) {
         String failedDatasets = "";
-        for (Map.Entry<String, Boolean> entry : validaitonResults.entrySet()) {
-            if (!entry.getValue()) {
+        for (Map.Entry<String, ValidationResultModel> entry : validaitonResults.entrySet()) {
+            if (entry.getValue().getHttpResponse() != null && entry.getValue().getHttpResponse().equals("200")) {
                 failedDatasets += " " + entry.getKey() + " - Successfully ingested! \n";
             }
             else {
                 failedDatasets += " " + entry.getKey() + " - Ingestion error! Please check the validation report!\n";
             }
+            failedDatasets += " " + entry.getKey() + " - HTTP response: " + entry.getValue().getHttpResponse();
+            failedDatasets += " " + entry.getKey() + " - validity: \n" + entry.getValue().getValidation() + "\n";
         }
         new SendMail().send(failedDatasets);
     }
@@ -428,19 +477,36 @@ public class ProcessUpdateService {
         }
     }
 
-    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String[] scripts){
+    public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections,
+                                                   Map<String, ProviderConfigModel> chiIngestConfig){
         Map<String, File[]> preProcessed = compressedCollections;
         int i = 0;
-        for (String script : scripts){
-            preProcessed = pythonPreProcessing(preProcessed, script, i + "");
-            i++;
-        }
 
+        for (Map.Entry<String, ProviderConfigModel> conf : chiIngestConfig.entrySet()) {
+            String preProcessing = conf.getValue().getPreProcessingScriptsDir();
+            if (!compressedCollections.containsKey(conf.getKey()))
+                continue;
+            if (preProcessing == null) {
+                preProcessed.put(conf.getKey(), compressedCollections.get(conf.getKey()));
+            } else {
+                for (String script : ResourceService.listDirContentsPaths(
+                        conf.getValue().getPreProcessingScriptsDir())) {
+                    preProcessed = pythonPreProcessing(preProcessed, script, i + "", conf.getKey());
+                    i++;
+                }
+            }
+        }
+        //
+        Set<String> missingInConfig = compressedCollections.keySet();
+        missingInConfig.removeAll(chiIngestConfig.keySet());
+        for(String missingKey : missingInConfig){
+            preProcessed.put(missingKey, compressedCollections.get(missingKey));
+        }
         return preProcessed;
     }
 
     public Map<String, File[]> pythonPreProcessing(Map<String, File[]> compressedCollections, String script,
-                                                   String suffix){
+                                                   String suffix, String key){
         Map<String, File[]> preProcessed = new HashMap<>();
 
         for (Map.Entry<String, File[]> files : compressedCollections.entrySet()) {
@@ -450,7 +516,7 @@ public class ProcessUpdateService {
                         + File.separator + "pre-processing-" + suffix + File.separator + file.getName();
 
 
-                if (files.getKey().contains("de-barch"))
+                if (files.getKey().contains(key))
 
                     try {
                         String command = "python3.5 " + script + " "

@@ -40,7 +40,7 @@ public class SendMail {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress("ehri.ingest@gmail.com"));
             message.setRecipients(Message.RecipientType.TO,
-                    InternetAddress.parse("boyan.simeonov@ontotext.com"));
+                    InternetAddress.parse("boyan.simeonov@ontotext.com,Francesco.Gelati@arch.be"));
             message.setSubject("EHRI Auto generated ingest report");
             message.setText("The following datasets failed to ingest, because of validation errors:\n" +
                     datasets);

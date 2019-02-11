@@ -6,7 +6,7 @@ URL="http://localhost:8080"
 
 run_server(){
 	cd lib
-	java -jar demo-0.0.1-SNAPSHOT.jar
+	java -jar demo-0.0.1-SNAPSHOT.jar --server.port=9090
 }
 
 pop_browser(){

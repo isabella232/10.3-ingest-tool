@@ -84,29 +84,31 @@ public class SVRLInjector {
     }
 
     private static void inject(Document xml, Document svrl) {
-        NodeList fails = svrl.getDocumentElement().getElementsByTagName("svrl:failed-assert");
+        if (svrl != null) {
+            NodeList fails = svrl.getDocumentElement().getElementsByTagName("svrl:failed-assert");
 
-        for (int i = 0; i < fails.getLength(); i++) {
-            Element fail = (Element) fails.item(i);
+            for (int i = 0; i < fails.getLength(); i++) {
+                Element fail = (Element) fails.item(i);
 
-            String path = fail.getAttribute("location");
-            if (path.equals("")) continue;
+                String path = fail.getAttribute("location");
+                if (path.equals("")) continue;
 
-            try {
-                Element target = (Element) XPATH.evaluate(path, xml, XPathConstants.NODE);
-                
-                Node text = fail.getElementsByTagName("svrl:text").item(0);
-                if (text == null || text.getFirstChild().toString().contains("\"xsi:schemaLocation\" not allowed here")) continue;
-                target.setAttribute("svrl_text", text.getTextContent());
+                try {
+                    Element target = (Element) XPATH.evaluate(path, xml, XPathConstants.NODE);
 
-                Node docu = fail.getElementsByTagName("svrl:diagnostic-reference").item(0);
-                if (docu != null) target.setAttribute("svrl_docu", docu.getTextContent());
+                    Node text = fail.getElementsByTagName("svrl:text").item(0);
+                    if (text == null || text.getFirstChild().toString().contains("\"xsi:schemaLocation\" not allowed here")) continue;
+                    target.setAttribute("svrl_text", text.getTextContent());
 
-                String role = fail.getAttribute("role");
-                if (! role.equals("")) target.setAttribute("svrl_role", role);
+                    Node docu = fail.getElementsByTagName("svrl:diagnostic-reference").item(0);
+                    if (docu != null) target.setAttribute("svrl_docu", docu.getTextContent());
 
-            } catch (XPathExpressionException e) {
-                LOGGER.error("failed to evaluate SVRL XPath: " + path, e);
+                    String role = fail.getAttribute("role");
+                    if (! role.equals("")) target.setAttribute("svrl_role", role);
+
+                } catch (XPathExpressionException e) {
+                    LOGGER.error("failed to evaluate SVRL XPath: " + path, e);
+                }
             }
         }
     }

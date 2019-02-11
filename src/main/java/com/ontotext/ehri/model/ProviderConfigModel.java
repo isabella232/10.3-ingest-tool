@@ -14,6 +14,25 @@ public class ProviderConfigModel {
     private String log;
     private String validationErrors;
     private String eadFolderName;
+    private String allowUpdate;
+    private String tolerant;
+
+    public String getTolerant() {
+        return tolerant;
+    }
+
+    public void setTolerant(String tolerant) {
+        this.tolerant = tolerant;
+    }
+
+    public String getAllowUpdate() {
+        return allowUpdate;
+    }
+
+    public void setAllowUpdate(String allowUpdate) {
+        this.allowUpdate = allowUpdate;
+    }
+    private String preProcessingScriptsDir;
 
     public String getEadFolderName() {
         return eadFolderName;
@@ -85,5 +104,13 @@ public class ProviderConfigModel {
 
     public void setEnrichments(String enrichments) {
         this.enrichments = enrichments;
+    }
+
+    public String getPreProcessingScriptsDir() {
+        return preProcessingScriptsDir;
+    }
+
+    public void setPreProcessingScriptsDir(String preProcessingScriptsDir) {
+        this.preProcessingScriptsDir = preProcessingScriptsDir;
     }
 }

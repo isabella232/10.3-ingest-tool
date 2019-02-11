@@ -3,6 +3,7 @@ package com.ontotext.ehri.controllers;
 import com.ontotext.ehri.model.FileMetaModel;
 import com.ontotext.ehri.model.ProviderConfigModel;
 import com.ontotext.ehri.model.TransformationModel;
+import com.ontotext.ehri.model.ValidationResultModel;
 import com.ontotext.ehri.services.*;
 import com.ontotext.ehri.tools.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,19 +40,21 @@ public class RestController {
 
     @RequestMapping(value = "/processUpdates", method = RequestMethod.GET)
     public Map<String, List<FileMetaModel>> processUpdate() throws IOException, URISyntaxException {
-        Map<String, List<FileMetaModel>> changes =  processUpdateService.checkForChanges();
-        Date now = processUpdateService.prepareForValidation(changes);
+        Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
+        Map<String, List<FileMetaModel>> changes =  processUpdateService.checkForChanges(chiIngestConfig);
+        Date now = processUpdateService.prepareForValidation(changes, chiIngestConfig);
         Map<String, File[]> eadFiles = processUpdateService.listValidationFolderFiles(now);
         processUpdateService.fixInputValidationFolder(eadFiles);
-        Map<String, File[]> preProcessed = processUpdateService.pythonPreProcessing(eadFiles, resourceService.listPreProcessingDir());
 
-        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(preProcessed, now);
 
-        Map<String, ProviderConfigModel> chiIngestConfig = configurationService.loadCHIIngestConfig();
 
-        Map<String, Boolean> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
+//        Map<String, File[]> preProcessed = processUpdateService.pythonPreProcessing(eadFiles, chiIngestConfig);
+        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(eadFiles, now);
+
+        Map<String, ValidationResultModel> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
         processUpdateService.addEADFileLocation(chiIngestConfig, compressedCollections);
         processUpdateService.processIngest(chiIngestConfig, validationResults);
+//        processUpdateService.ingest2(chiIngestConfig, validationResults);
         processUpdateService.reportDatasetsWithErrors(validationResults);
 
         return changes;
