@@ -48,8 +48,8 @@ public class RestController {
 
 
 
-//        Map<String, File[]> preProcessed = processUpdateService.pythonPreProcessing(eadFiles, chiIngestConfig);
-        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(eadFiles, now);
+        Map<String, File[]> preProcessed = processUpdateService.pythonPreProcessing(eadFiles, chiIngestConfig);
+        Map<String, File> compressedCollections = processUpdateService.compressFileCollection(preProcessed, now);
 
         Map<String, ValidationResultModel> validationResults  = validationService.validateDirectory(new TransformationModel(), now, null, false, chiIngestConfig);
         processUpdateService.addEADFileLocation(chiIngestConfig, compressedCollections);

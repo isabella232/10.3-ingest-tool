@@ -16,6 +16,7 @@ public class ProviderConfigModel {
     private String eadFolderName;
     private String allowUpdate;
     private String tolerant;
+    private String preProcessingScriptsDir;
 
     public String getTolerant() {
         return tolerant;
@@ -32,7 +33,6 @@ public class ProviderConfigModel {
     public void setAllowUpdate(String allowUpdate) {
         this.allowUpdate = allowUpdate;
     }
-    private String preProcessingScriptsDir;
 
     public String getEadFolderName() {
         return eadFolderName;
