@@ -1,5 +1,8 @@
 package com.ontotext.ehri.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Boyan on 15-Aug-17.
  */
@@ -17,6 +20,16 @@ public class ProviderConfigModel {
     private String allowUpdate;
     private String tolerant;
     private String preProcessingScriptsDir;
+
+    private List<String> eadTarLocations = new ArrayList<String>();
+
+    public List<String> getEadTarLocations() {
+        return eadTarLocations;
+    }
+
+    public void setEadTarLocations(List<String> eadTarLocations) {
+        this.eadTarLocations = eadTarLocations;
+    }
 
     public String getTolerant() {
         return tolerant;

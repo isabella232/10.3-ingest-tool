@@ -305,21 +305,52 @@ public class ProcessUpdateService {
         }
     }
 
-    public Map<String, File> compressFileCollection(Map<String, File[]> eadFileCollections, Date now) throws FileNotFoundException {
-        Map<String, File> compressedCollection = new HashMap<>();
+    public Map<String, List<File>> compressFileCollection(Map<String, File[]> eadFileCollections, Date now) throws FileNotFoundException {
+        Map<String, List<File>> compressedCollection = new HashMap<>();
         for (Map.Entry<String, File[]> entry : eadFileCollections.entrySet()) {
-            File archiveFile = compress(entry.getValue(), entry.getKey(), now);
-            compressedCollection.put(entry.getKey(), archiveFile);
+            List<File[]> buckets = splitFilesIntoBuckets(entry.getValue(), 4);
+            List<File> archiveFiles = new ArrayList<>();
+
+            for (int bucketId = 0; bucketId < buckets.size() ; bucketId ++){
+
+                archiveFiles.add(compress(buckets.get(bucketId), entry.getKey(), now, bucketId));
+            }
+
+            compressedCollection.put(entry.getKey(), archiveFiles);
         }
         return compressedCollection;
     }
 
-    public File compress(File[] files, String collection, Date now) throws FileNotFoundException {
+    private List<File[]> splitFilesIntoBuckets(File[] files, float threshold){
+        List<File[]> buckets = new ArrayList<>();
+        List<File> currentBucket = new ArrayList<>();
+
+        float currentBucketSize = 0;
+
+        for (File file : files){
+
+            currentBucket.add(file);
+
+            currentBucketSize += (float) file.length()/(1024*1024);
+
+            if(currentBucketSize > threshold){
+                buckets.add(currentBucket.toArray(new File[currentBucket.size()]));
+                currentBucket = new ArrayList<>();
+                currentBucketSize = 0;
+            }
+        }
+        if(currentBucketSize!= 0){
+            buckets.add(currentBucket.toArray(new File[currentBucket.size()]));
+        }
+        return buckets;
+    }
+
+    public File compress(File[] files, String collection, Date now, int bucketId) throws FileNotFoundException {
         TarArchiveEntry t = new TarArchiveEntry(new File(""));
         List<TarArchiveEntry> tarArchiveEntries = new ArrayList<>();
         File archiveDir = new File(Configuration.getString("pre-ingest-dir") + File.separator + Configuration.DATE_FORMAT.format(now) + File.separator + collection + File.separator + "compressed");
         if (!archiveDir.exists()) archiveDir.mkdir();
-        File compressedCollection = new File(archiveDir.getPath() + File.separator + collection + ".tar");
+        File compressedCollection = new File(archiveDir.getPath() + File.separator + collection + "-" + bucketId + ".tar");
         TarArchiveOutputStream s = new TarArchiveOutputStream(new FileOutputStream(compressedCollection));
         s.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
         try {
@@ -368,45 +399,50 @@ public class ProcessUpdateService {
                 LOGGER.info("Ingesting: " + urlParameters);
                 URL obj = null;
                 try {
-                    obj = new URL(url + "?" + urlParameters);
 
-                    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-                    //add reuqest header
-                    con.setRequestMethod("POST");
-                    con.setRequestProperty("Content-type", "application/octet-stream");
-                    con.setRequestProperty("X-User", "user000958");
-                    con.setRequestProperty("Content-Length", String.valueOf(new File(entry.getValue().getEadFileLocation()).length()));
+                    for(String tar : entry.getValue().getEadTarLocations()){
+                        obj = new URL(url + "?" + urlParameters);
 
-                    // Send post request
-                    con.setDoOutput(true);
-                    DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-                    LOGGER.info("File location: " + entry.getValue().getEadFileLocation());
-                    wr.write(readAndClose(new FileInputStream(new File(entry.getValue().getEadFileLocation()))));
-                    wr.flush();
-                    wr.close();
+                        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-                    int responseCode = con.getResponseCode();
 
-                    LOGGER.info("\nSending 'POST' request to URL : " + url);
-                    LOGGER.info("Post parameters : " + urlParameters);
-                    LOGGER.info("Response Code : " + responseCode);
-                    LOGGER.info("Responce Message : " + con.getResponseMessage());
+                        //add reuqest header
+                        con.setRequestMethod("POST");
+                        con.setRequestProperty("Content-type", "application/octet-stream");
+                        con.setRequestProperty("X-User", "user000958");
+                        con.setRequestProperty("Content-Length", String.valueOf(new File(tar).length()));
 
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(con.getInputStream()));
-                    String inputLine;
-                    StringBuffer response = new StringBuffer();
+                        // Send post request
+                        con.setDoOutput(true);
+                        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+                        LOGGER.info("File location: " + tar);
+                        wr.write(readAndClose(new FileInputStream(new File(tar))));
+                        wr.flush();
+                        wr.close();
 
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
+                        int responseCode = con.getResponseCode();
 
-                    validaitonResults.get(entry.getValue().getName()).setHttpResponse(String.valueOf(responseCode));
+                        LOGGER.info("\nSending 'POST' request to URL : " + url);
+                        LOGGER.info("Post parameters : " + urlParameters);
+                        LOGGER.info("Response Code : " + responseCode);
+                        LOGGER.info("Responce Message : " + con.getResponseMessage());
 
-                    //print result
-                    System.out.println(response.toString());
+                        BufferedReader in = new BufferedReader(
+                                new InputStreamReader(con.getInputStream()));
+                        String inputLine;
+                        StringBuffer response = new StringBuffer();
+
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        in.close();
+
+                        validaitonResults.get(entry.getValue().getName()).setHttpResponse(String.valueOf(responseCode));
+
+                        //print result
+                        System.out.println(response.toString());
+                        }
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -464,13 +500,15 @@ public class ProcessUpdateService {
         return result.toByteArray();
     }
 
-    public void addEADFileLocation(Map<String, ProviderConfigModel> providerConfig, Map<String, File> compressedCollections) {
+    public void addEADFileLocation(Map<String, ProviderConfigModel> providerConfig, Map<String, List<File>> compressedCollections) {
         Set<String> compressedCollectionsKeys = compressedCollections.keySet();
         Set<String> providerConf = providerConfig.keySet();
         for (String collection : compressedCollectionsKeys) {
             for(String providerC : providerConf) {
                 if (StringUtils.containsIgnoreCase(collection, providerC, Locale.US)) {
-                    providerConfig.get(providerC).setEadFileLocation(compressedCollections.get(collection).getAbsolutePath());
+                    for (File collectionTar : compressedCollections.get(collection)){
+                        providerConfig.get(providerC).getEadTarLocations().add(collectionTar.getAbsolutePath());
+                    }
                     providerConfig.get(providerC).setEadFolderName(collection);
                 }
             }
